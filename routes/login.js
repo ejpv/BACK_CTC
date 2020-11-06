@@ -18,7 +18,6 @@ app.post('/login', function (req, res) {
         });
     }
 
-
     Usuario.findOne({ email: body.email }, (err, usuarioDb) => {
         if (err) {
             return res.status(500).json({
