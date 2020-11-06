@@ -2,10 +2,11 @@
   "name": "back",
   "version": "1.0.0",
   "description": "Proyecto CTC backend",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
     "start": "node .",
-    "dev": "nodemon --watch ."
+    "dev": "nodemon --watch .",
+    "format": "prettier --write \"**/*.js\" \"**/*.json\""
   },
   "author": "",
   "license": "ISC",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "dotenv": "^8.2.0",
-    "nodemon": "^2.0.6"
+    "nodemon": "^2.0.6",
+    "prettier": "^2.1.2"
   }
 }

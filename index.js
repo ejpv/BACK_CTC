@@ -2,4 +2,4 @@
 require('dotenv').config()
 
 // Escuchar el servidor
-require('server')
+require('./server')

@@ -4,15 +4,14 @@ Puerto
 ============================
 ¨*/
 
-process.env.PORT = process.env.PORT || 3000;
-
+process.env.PORT = process.env.PORT || 3000
 
 /*
 ============================
 Entorno
 ============================
 */
-process.env.NODE_ENV = process.env.NODE_ENV || 'dev';
+process.env.NODE_ENV = process.env.NODE_ENV || 'dev'
 
 /*
 ============================
@@ -24,7 +23,7 @@ Expiracion token
 5 días
 */
 
-process.env.CADUCIDAD_TOKEN = process.env.CADUCIDAD_TOKEN ||  '24h';
+process.env.CADUCIDAD_TOKEN = process.env.CADUCIDAD_TOKEN || '24h'
 
 /*
 ============================
@@ -32,7 +31,7 @@ Semilla Token
 ============================
 */
 
-process.env.SEED_TOKEN = process.env.SEED_TOKEN || 'seed-token-node';
+process.env.SEED_TOKEN = process.env.SEED_TOKEN || 'seed-token-node'
 
 /*
 ============================
@@ -40,4 +39,4 @@ DB
 ============================
 */
 
-process.env.MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ctc';
+process.env.MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ctc'
