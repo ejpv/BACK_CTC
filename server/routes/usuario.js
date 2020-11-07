@@ -6,16 +6,10 @@ const _ = require('underscore')
 const app = express()
 
 //obtener todos los usuarios
-app.get('/usuarios', verificarToken, (req, res) => {
-  let desde = req.query.desde || 0
-  desde = Number(desde)
+//app.get('/usuarios', verificarToken, (req, res) => {
+  app.get('/usuarios', (req, res) => {
 
-  let limite = req.query.limite || 5
-  limite = Number(limite)
-
-  Usuario.find({ estado: true }, 'nombre email rol estado')
-    .skip(desde)
-    .limit(limite)
+  Usuario.find({ estado: true }, 'nombre apellido email rol estado activado')
     .exec((err, usuarios) => {
       if (err) {
         return res.status(400).json({
@@ -23,7 +17,14 @@ app.get('/usuarios', verificarToken, (req, res) => {
           err
         })
       }
-      Usuario.count({ estado: true }, (err, conteo) => {
+      Usuario.countDocuments({ estado: true }, (err, conteo) => {
+        if (err) {
+          return res.status(400).json({
+            ok: false,
+            err
+          })
+        }
+
         res.json({
           ok: true,
           usuarios,
@@ -34,15 +35,21 @@ app.get('/usuarios', verificarToken, (req, res) => {
 })
 
 //ingresar un usuario
-app.post('/usuario', [verificarToken, verificarAdmin_Rol], (req, res) => {
+// app.post('/usuario', [verificarToken, verificarAdmin_Rol], (req, res) => {
+  app.post('/usuario', (req, res) => {
   let body = req.body
+
 
   let usuario = new Usuario({
     nombre: body.nombre,
+    apellido: body.apellido,
     email: body.email,
-    password: bcrypt.hashSync(body.password, 10),
     rol: body.rol
   })
+
+  if (!(body.password === undefined)) {
+    usuario.password= bcrypt.hashSync(body.password, 10)
+  }
 
   usuario.save((err, usuarioDB) => {
     if (err) {
@@ -60,9 +67,14 @@ app.post('/usuario', [verificarToken, verificarAdmin_Rol], (req, res) => {
 })
 
 //editar un usuario por id
-app.put('/usuario/:id', [verificarToken, verificarAdmin_Rol], (req, res) => {
+// app.put('/usuario/:id', [verificarToken, verificarAdmin_Rol], (req, res) => {
+  app.put('/usuario/:id', (req, res) => {
   let id = req.params.id
-  let body = _.pick(req.body, ['nombre', 'email', 'img', 'rol'])
+
+  //_.pick es filtrar y solo elegir esas del body
+    //problema al editar email
+  // let body = _.pick(req.body, ['nombre', 'apellido','email', 'rol',])
+  let body = _.pick(req.body, ['nombre', 'apellido', 'rol'])
 
   Usuario.findByIdAndUpdate(
     id,
@@ -85,7 +97,8 @@ app.put('/usuario/:id', [verificarToken, verificarAdmin_Rol], (req, res) => {
 })
 
 //eliminar un usuario
-app.delete('/usuario/:id', [verificarToken, verificarAdmin_Rol], (req, res) => {
+// app.delete('/usuario/:id', [verificarToken, verificarAdmin_Rol], (req, res) => {
+  app.delete('/usuario/:id', (req, res) => {
   let id = req.params.id
 
   let cambiarEstado = {
@@ -104,11 +117,20 @@ app.delete('/usuario/:id', [verificarToken, verificarAdmin_Rol], (req, res) => {
       return res.status(400).json({
         ok: false,
         err: {
-          message: 'El usuario no existe'
+          message: 'El usuario no existe.'
         }
       })
     }
 
+    if (usuarioBorrado.estado === false) {
+      return res.status(400).json({
+        ok: false,
+        err: {
+          message: 'El usuario está actualmente borrado.'
+        }
+      })
+    }
+    
     res.json({
       ok: true,
       usuario: usuarioBorrado

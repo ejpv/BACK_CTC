@@ -9,18 +9,13 @@ let rolesValidos = {
 let Schema = mongoose.Schema
 
 let usuarioSchema = new Schema({
-  nombre: { type: String, required: [true, 'El nombre es necesario'] },
+  nombre: { type: String, required: [true, 'El nombre es necesarios'] },
+  apellido: { type: String, required: [true, 'El apellido es necesario'] },
   email: { type: String, unique: true, required: [true, 'El correo es necesario'] },
   password: { type: String, required: [true, 'La contraseña es obligatoria'] },
-  img: { type: String, required: false },
-  rol: {
-    type: String,
-    default: 'USER_ROLE',
-    required: [true, 'El Rol es necesario'],
-    enum: rolesValidos
-  },
+  rol: { type: String, default: 'USER_ROLE', required: [true, 'El Rol es necesario'], enum: rolesValidos },
   estado: { type: Boolean, default: true },
-  google: { type: String, default: false }
+  activado: { type: Boolean, default: false }
 })
 
 usuarioSchema.methods.toJSON = function () {

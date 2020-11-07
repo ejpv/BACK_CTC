@@ -4,7 +4,7 @@
   "description": "Proyecto CTC backend",
   "main": "index.js",
   "scripts": {
-    "start": "node .",
+    "start": "nodemon .",
     "dev": "nodemon --watch .",
     "format": "prettier --write \"**/*.js\" \"**/*.json\""
   },
