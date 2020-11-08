@@ -17,8 +17,11 @@ app.use(require('./routes/index'))
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useCreateIndex: true,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
+  useFindAndModify: false 
 })
+
+
 mongoose.connection.on('error', console.error.bind(console, 'connection error:'))
 mongoose.connection.once('open', function () {
   console.log('\x1b[36mDB online\x1b[0m')

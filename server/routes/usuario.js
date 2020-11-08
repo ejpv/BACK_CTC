@@ -69,13 +69,12 @@ app.put('/api/usuario/:id', [verificarToken, verificarAdmin_Rol], (req, res) => 
 
   //_.pick es filtrar y solo elegir esas del body
   //problema al editar email
-  // let body = _.pick(req.body, ['nombre', 'apellido','email', 'rol',])
-  let body = _.pick(req.body, ['nombre', 'apellido', 'rol'])
+  let body = _.pick(req.body, ['nombre', 'apellido', 'rol', 'email'])
 
   Usuario.findByIdAndUpdate(
     id,
     body,
-    { new: true, runValidators: true },
+    { new: true, runValidators: true, context: 'query' },
     (err, usuarioDB) => {
       if (err) {
         return res.status(400).json({
@@ -194,7 +193,7 @@ app.get('/api/usuarios/eliminados', [verificarToken, verificarAdmin_Rol], (req, 
 })
 
 //activar un usuario
-/*app.put('/api/usuario/:id/activar', , (req, res) => {
+/*app.put('/api/usuario/:id/activar', (req, res) => {
   let id = req.params.id
 
   let cambiarActivo = {
@@ -224,4 +223,5 @@ app.get('/api/usuarios/eliminados', [verificarToken, verificarAdmin_Rol], (req, 
     })
   })
 })*/
+
 module.exports = app
