@@ -5,7 +5,7 @@ const Usuario = require('../models/usuario')
 const app = express()
 
 // logeo de un usuario
-app.post('/login', function (req, res) {
+app.post('/api/login', function (req, res) {
   const body = req.body
 
   //Email y contraseña requridos.
@@ -27,7 +27,7 @@ app.post('/login', function (req, res) {
     }
 
     //buscando el email
-    if (!usuarioDb) {
+    if ((!usuarioDb) || (usuarioDb.estado === false)) {
       return res.status(400).json({
         ok: false,
         err: {

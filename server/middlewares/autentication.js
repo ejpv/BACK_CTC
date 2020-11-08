@@ -20,7 +20,7 @@ let verificarToken = (req, res, next) => {
 let verificarAdmin_Rol = (req, res, next) => {
   let usuario = req.usuario
 
-  if (usuario.rol === ('USER_ROLE' || 'REPRESENTANT_ROLE')) {
+  if ((usuario.rol === 'TECHNICAL_ROLE') || (usuario.rol === 'REPRESENTANT_ROLE')) {
     return res.json({
       ok: false,
       err: {
