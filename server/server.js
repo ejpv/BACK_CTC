@@ -14,6 +14,9 @@ app.use(bodyParser.json())
 // configuración de las rutas
 app.use(require('./routes/index'))
 
+// sandbox publico
+app.use('/image', express.static(process.env.SANDBOX))
+
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useCreateIndex: true,
@@ -24,9 +27,9 @@ mongoose.connect(process.env.MONGO_URI, {
 
 mongoose.connection.on('error', console.error.bind(console, 'connection error:'))
 mongoose.connection.once('open', function () {
-  console.log('\x1b[36mDB online\x1b[0m')
+  console.log('\tDB online')
 })
 
 app.listen(process.env.PORT, () => {
-  console.log(`\x1b[36mEscuchando en el puerto ${process.env.PORT}\x1b[0m`)
+  console.log(`\x1b[36m\x1b[1mAplication:\x1b[0m\n\t${process.env.DOMAIN}`)
 })
