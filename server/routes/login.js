@@ -27,7 +27,7 @@ app.post('/api/login', function (req, res) {
     }
 
     //buscando el email
-    if ((!usuarioDb) || (usuarioDb.estado === false)) {
+    if (!usuarioDb || usuarioDb.estado === false) {
       return res.status(400).json({
         ok: false,
         err: {

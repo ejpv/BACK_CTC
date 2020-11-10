@@ -1,3 +1,5 @@
+const path = require('path')
+
 /*
 ============================
 Puerto
@@ -35,8 +37,23 @@ process.env.SEED_TOKEN = process.env.SEED_TOKEN || 'seed-token-node'
 
 /*
 ============================
+Dominio
+============================
+*/
+
+process.env.DOMAIN = process.env.DOMAIN || `http://localhost:${process.env.PORT}`
+
+/*
+============================
 DB
 ============================
 */
 
 process.env.MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ctc'
+
+/*
+============================
+Almacenamiento
+============================
+*/
+process.env.SANDBOX = process.env.SANDBOX || path.join(__dirname, '../../.sandbox')
