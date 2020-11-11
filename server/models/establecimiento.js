@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 let Schema = mongoose.Schema
 
 let establecimientoSchema = new Schema({
-    nombrePropietario: {type: String, required: true},
+    nombrePropietario: {type: String, required: [true, 'El Propietario es obligatorio']},
     representante: { type: Schema.Types.ObjectId, ref: 'Representante', required: true },
     administrador: {type: String, required: true},
     lugar: { type: Schema.Types.ObjectId, ref: 'Lugar', required: true },
@@ -13,7 +13,7 @@ let establecimientoSchema = new Schema({
     nacionalidad: {type: String, required: false},
     web:{ type:String, required: false},
     telefono: {type: String, required: false},
-    areaProtegida: {type: Schema.Types.ObjectId, ref: 'AreaProtegida' ,required: true},
+    areaProtegida: {type: Schema.Types.ObjectId, ref: 'AreaProtegida', required: false},
     estado: { type: Boolean, default: true }
 })
 

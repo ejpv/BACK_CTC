@@ -68,7 +68,6 @@ app.put('/api/usuario/:id', [verificarToken, verificarAdmin_Rol], (req, res) => 
   let id = req.params.id
 
   //_.pick es filtrar y solo elegir esas del body
-  //problema al editar email
   let body = _.pick(req.body, ['nombre', 'apellido', 'rol', 'email'])
 
   Usuario.findByIdAndUpdate(
