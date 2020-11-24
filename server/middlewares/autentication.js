@@ -32,7 +32,23 @@ let verificarAdmin_Rol = (req, res, next) => {
   }
 }
 
+let verificarNotRepresentant = (req, res, next) => {
+  let usuario = req.usuario
+
+  if (usuario.rol === 'REPRESENTANT_ROLE') {
+    return res.json({
+      ok: false,
+      err: {
+        message: 'El usuario no tiene un rol Permitido'
+      }
+    })
+  } else {
+    next()
+  }
+}
+
 module.exports = {
   verificarToken,
-  verificarAdmin_Rol
+  verificarAdmin_Rol,
+  verificarNotRepresentant
 }

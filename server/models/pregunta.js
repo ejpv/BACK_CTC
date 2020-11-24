@@ -1,10 +1,16 @@
 const mongoose = require('mongoose')
 
+let tiposValidos = {
+    values: ['SN', 'ABIERTA', 'SELECCION', 'MULTIPLE'],
+    message: '{VALUE} no es un tipo de pregunta válido'
+}
+
 let Schema = mongoose.Schema
 
 let preguntaSchema = new Schema({
-    nombre: { type: String, required: [true, 'El nombre es necesario'] },
-    tipoPregunta: { type: Schema.Types.ObjectId, ref: 'tipoPregunta', required: true },
+    tipo: { type: String, required: [true, 'El Tipo de pregunta es necesario'], enum: tiposValidos },
+    enunciado: { type: String, required: [true, 'El Enunciado de la pregunta es necesario'] },
+    opciones: { type: Array },
     estado: { type: Boolean, default: true }
 })
 

@@ -5,5 +5,6 @@ const app = express()
 app.use(require('./usuario'))
 app.use(require('./login'))
 app.use(require('./avatar'))
+app.use(require('./pregunta'))
 
 module.exports = app
