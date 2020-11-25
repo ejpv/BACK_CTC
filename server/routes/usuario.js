@@ -6,8 +6,11 @@ const _ = require('underscore')
 const app = express()
 
 //obtener todos los usuarios enviandoles el estado
-app.get('/api/usuarios/:estado', verificarToken, (req, res) => {
-  let estado = req.params.estado;
+app.get('/api/usuarios', verificarToken, (req, res) => {
+ 
+  // el estado por defecto es true, solo acepta estado falso por la url
+ const estado = req.query.estado === 'false' ? false : true
+
   Usuario.find({ estado }, 'nombre apellido email rol estado activado avatar').exec(
     (err, usuarios) => {
       if (err) {

@@ -10,7 +10,7 @@ let Schema = mongoose.Schema
 let preguntaSchema = new Schema({
     tipo: { type: String, required: [true, 'El Tipo de pregunta es necesario'], enum: tiposValidos },
     enunciado: { type: String, required: [true, 'El Enunciado de la pregunta es necesario'] },
-    opciones: { type: Array },
+    opciones: [{ type: String }],
     estado: { type: Boolean, default: true }
 })
 
