@@ -5,9 +5,10 @@ const { verificarToken, verificarAdmin_Rol } = require('../middlewares/autentica
 const _ = require('underscore')
 const app = express()
 
-//obtener todos los usuarios
-app.get('/api/usuarios', verificarToken, (req, res) => {
-  Usuario.find({ estado: true }, 'nombre apellido email rol estado activado avatar').exec(
+//obtener todos los usuarios enviandoles el estado
+app.get('/api/usuarios/:estado', verificarToken, (req, res) => {
+  let estado = req.params.estado;
+  Usuario.find({ estado }, 'nombre apellido email rol estado activado avatar').exec(
     (err, usuarios) => {
       if (err) {
         return res.status(400).json({
@@ -15,7 +16,7 @@ app.get('/api/usuarios', verificarToken, (req, res) => {
           err
         })
       }
-      Usuario.countDocuments({ estado: true }, (err, conteo) => {
+      Usuario.countDocuments({ estado }, (err, conteo) => {
         if (err) {
           return res.status(400).json({
             ok: false,
@@ -25,8 +26,8 @@ app.get('/api/usuarios', verificarToken, (req, res) => {
 
         res.json({
           ok: true,
-          usuarios,
-          total: conteo
+          total: conteo,
+          usuarios
         })
       })
     }
@@ -132,74 +133,38 @@ app.delete('/api/usuario/:id', [verificarToken, verificarAdmin_Rol], (req, res) 
 })
 
 //restaurar un usuario
-app.put(
-  '/api/usuario/:id/restaurar',
-  [verificarToken, verificarAdmin_Rol],
-  (req, res) => {
-    let id = req.params.id
+app.put('/api/usuario/:id/restaurar', [verificarToken, verificarAdmin_Rol], (req, res) => {
+  let id = req.params.id
 
-    let cambiarEstado = {
-      estado: true
-    }
-
-    Usuario.findByIdAndUpdate(
-      id,
-      cambiarEstado,
-      { new: true },
-      (err, usuarioRestaurado) => {
-        if (err) {
-          return res.status(400).json({
-            ok: false,
-            err
-          })
-        }
-
-        if (!usuarioRestaurado) {
-          return res.status(400).json({
-            ok: false,
-            err: {
-              message: 'El usuario no existe.'
-            }
-          })
-        }
-
-        res.json({
-          ok: true,
-          usuario: usuarioRestaurado
-        })
-      }
-    )
+  let cambiarEstado = {
+    estado: true
   }
-)
 
-// obtener todos los usuarios eliminados
-app.get('/api/usuarios/eliminados', [verificarToken, verificarAdmin_Rol], (req, res) => {
-  Usuario.find(
-    { estado: false },
-    'nombre apellido email rol estado activado avatar'
-  ).exec((err, usuarios) => {
+  Usuario.findByIdAndUpdate(id, cambiarEstado, { new: true }, (err, usuarioRestaurado) => {
     if (err) {
       return res.status(400).json({
         ok: false,
         err
       })
     }
-    Usuario.countDocuments({ estado: false }, (err, conteo) => {
-      if (err) {
-        return res.status(400).json({
-          ok: false,
-          err
-        })
-      }
 
-      res.json({
-        ok: true,
-        usuarios,
-        total: conteo
+    if (!usuarioRestaurado) {
+      return res.status(400).json({
+        ok: false,
+        err: {
+          message: 'El usuario no existe.'
+        }
       })
+    }
+
+    res.json({
+      ok: true,
+      usuario: usuarioRestaurado
     })
-  })
-})
+  }
+  )
+}
+)
 
 //activar un usuario
 /*app.put('/api/usuario/:id/activar', (req, res) => {
