@@ -7,5 +7,6 @@ app.use(require('./login'))
 app.use(require('./avatar'))
 app.use(require('./pregunta'))
 app.use(require('./formulario'))
+app.use(require('./formularioRepresentante'))
 
 module.exports = app
