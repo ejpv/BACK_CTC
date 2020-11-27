@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const uniqueValidator = require('mongoose-unique-validator')
 
 let Schema = mongoose.Schema
 
@@ -9,9 +10,12 @@ let representanteSchema = new Schema({
     cedula: { type: String, required: [true, 'La cédula es obligatoria'] },
     direccion: { type: String },
     telefono: { type: String, default: 0 },
-    usuario: { type: Schema.Types.ObjectId, ref: 'usuario', required: true },
+    usuario: { type: Schema.Types.ObjectId, ref: 'usuario', unique: true},
     estado: { type: Boolean, default: true },
 })
 
+representanteSchema.plugin(uniqueValidator, {
+    message: '{PATH} debe de ser único'
+  })
 
 module.exports = mongoose.model('representante', representanteSchema)

@@ -10,5 +10,6 @@ app.use(require('./formulario'))
 //app.use(require('./formularioRepresentante'))
 app.use(require('./lugar'))
 app.use(require('./areaProtegida'))
+app.use(require('./representante'))
 
 module.exports = app
