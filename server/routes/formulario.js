@@ -142,10 +142,7 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], (req,
                 })
             }
 
-            res.json({
-                ok: true,
-                formulario: formularioDB
-            })
+            res.status(204).json()
         }
     )
 })
@@ -184,10 +181,7 @@ app.delete('/api/formulario/:id', [verificarToken, verificarNotRepresentant], (r
             })
         }
 
-        res.json({
-            ok: true,
-            formulario: formularioBorrado
-        })
+        res.status(204).json()
     })
 })
 
@@ -225,10 +219,7 @@ app.put('/api/formulario/:id/restaurar', [verificarToken, verificarNotRepresenta
             })
         }
 
-        res.json({
-            ok: true,
-            formulario: formularioRestaurado
-        })
+        res.status(204).json()
     })
 })
 

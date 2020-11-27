@@ -133,10 +133,7 @@ app.put('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], (req, r
         })
       }
 
-      res.json({
-        ok: true,
-        pregunta: preguntaDB
-      })
+      res.status(204).json()
     }
   )
 })
@@ -185,10 +182,7 @@ app.delete('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], (req
           })
         }
 
-        res.json({
-          ok: true,
-          pregunta: preguntaEliminada
-        })
+        res.status(204).json()
       })
     } else {
       Pregunta.findByIdAndRemove(id, (err, preguntaDB) => {
@@ -209,11 +203,7 @@ app.delete('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], (req
           });
         }
 
-        res.json({
-          ok: true,
-          message: 'Pregunta borrada de la Base de Datos',
-          pregunta: preguntaDB
-        });
+        res.status(204).json()
       });
     }
   })
@@ -255,10 +245,7 @@ app.put('/api/pregunta/:id/restaurar', [verificarToken, verificarNotRepresentant
       })
     }
 
-    res.json({
-      ok: true,
-      pregunta: preguntaRestaurada
-    })
+    res.status(204).json()
   })
 })
 

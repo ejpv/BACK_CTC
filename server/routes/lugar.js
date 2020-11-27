@@ -27,7 +27,6 @@ app.post('/api/lugar', [verificarToken, verificarNotRepresentant], (req, res) =>
 
         res.json({
             ok: true,
-            message: 'Lugar creado satisfactoriamente',
             lugar: lugarDB
         })
     })
@@ -95,22 +94,16 @@ app.put('/api/lugar/:id', [verificarToken, verificarNotRepresentant], (req, res)
                 })
             }
 
-          res.status(204).json({
-                ok: true,
-                message: 'Lugar borrado correctamente.'
-            })
-            //res.status(204).json()
+            res.status(204).json()
         })
 })
 
 //Eliminar un lugar por id
-app.put('/api/lugar/:id', [verificarToken, verificarNotRepresentant], (req, res) => { })
-
-//Restaurar un lugar por id
-app.put('/api/lugar/:id/restaurar', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.delete('/api/lugar/:id', [verificarToken, verificarNotRepresentant], (req, res) => {
     let id = req.params.id
+
     let cambiarEstado = {
-        estado: true
+        estado: false
     }
 
     Lugar.findByIdAndUpdate(id, cambiarEstado, { runValidators: true, context: 'query' },
@@ -140,11 +133,46 @@ app.put('/api/lugar/:id/restaurar', [verificarToken, verificarNotRepresentant], 
                 })
             }
 
-            /*res.json({
-                ok: true,
-                message: 'Lugar borrado correctamente.'
-            })*/
-            res.status(204)
+            res.status(204).json()
+        })
+})
+
+//Restaurar un lugar por id
+app.put('/api/lugar/:id/restaurar', [verificarToken, verificarNotRepresentant], (req, res) => {
+    let id = req.params.id
+
+    let cambiarEstado = {
+        estado: true
+    }
+
+    Lugar.findByIdAndUpdate(id, cambiarEstado, { runValidators: true, context: 'query' },
+        (err, lugarDB) => {
+            if (err) {
+                return res.status(400).json({
+                    ok: false,
+                    err
+                })
+            }
+
+            if (!lugarDB) {
+                return res.status(400).json({
+                    ok: false,
+                    err: {
+                        message: 'No existe ese lugar, id inválido'
+                    }
+                })
+            }
+
+            if (lugarDB.estado === true) {
+                return res.status(400).json({
+                    ok: false,
+                    err: {
+                        message: 'El lugar actualmente no está borrado.'
+                    }
+                })
+            }
+
+            res.status(204).json()
         })
 })
 

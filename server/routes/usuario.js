@@ -86,10 +86,7 @@ app.put('/api/usuario/:id', [verificarToken, verificarAdmin_Rol], (req, res) => 
         })
       }
 
-      res.json({
-        ok: true,
-        usuario: usuarioDB
-      })
+      res.status(204).json()
     }
   )
 })
@@ -128,10 +125,7 @@ app.delete('/api/usuario/:id', [verificarToken, verificarAdmin_Rol], (req, res) 
       })
     }
 
-    res.json({
-      ok: true,
-      usuario: usuarioBorrado
-    })
+    res.status(204).json()
   })
 })
 
@@ -160,14 +154,9 @@ app.put('/api/usuario/:id/restaurar', [verificarToken, verificarAdmin_Rol], (req
       })
     }
 
-    res.json({
-      ok: true,
-      usuario: usuarioRestaurado
-    })
-  }
-  )
-}
-)
+    res.status(204).json()
+  })
+})
 
 //activar un usuario
 /*app.put('/api/usuario/:id/activar', (req, res) => {
