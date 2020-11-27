@@ -9,5 +9,6 @@ app.use(require('./pregunta'))
 app.use(require('./formulario'))
 //app.use(require('./formularioRepresentante'))
 app.use(require('./lugar'))
+app.use(require('./areaProtegida'))
 
 module.exports = app
