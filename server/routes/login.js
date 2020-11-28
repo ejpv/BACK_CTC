@@ -1,4 +1,5 @@
 const express = require('express')
+const Response = require('../utils/response')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const Usuario = require('../models/usuario')
@@ -10,40 +11,22 @@ app.post('/api/login', function (req, res) {
 
   //Email y contraseña requridos.
   if (!(body.email && body.password)) {
-    return res.status(400).json({
-      ok: false,
-      err: {
-        message: 'Email y contraseña requridos.'
-      }
-    })
+    return Response.BadRequest(err, res, 'Email y contraseña Requeridos')
   }
 
   Usuario.findOne({ email: body.email }, (err, usuarioDb) => {
     if (err) {
-      return res.status(500).json({
-        ok: false,
-        err
-      })
+      return Response.BadRequest(err, res)
     }
 
     //buscando el email
     if (!usuarioDb || usuarioDb.estado === false) {
-      return res.status(400).json({
-        ok: false,
-        err: {
-          message: 'El usuario no existe.'
-        }
-      })
+      return Response.BadRequest(err, res, 'El usuario no existe')
     }
 
     //comparar contraseña encriptandola y comparando la encriptación
     if (!bcrypt.compareSync(body.password, usuarioDb.password)) {
-      return res.status(401).json({
-        ok: false,
-        err: {
-          message: 'Contraseña Incorrecta.'
-        }
-      })
+      return Response.BadRequest(err, res, 'Contraseña Incorrecta')
     }
 
     //generar token

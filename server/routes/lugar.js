@@ -1,4 +1,5 @@
 const express = require('express')
+const Response = require('../utils/response')
 const Lugar = require('../models/lugar')
 const { verificarToken, verificarNotRepresentant } = require('../middlewares/autentication')
 const _ = require('underscore')
@@ -19,16 +20,10 @@ app.post('/api/lugar', [verificarToken, verificarNotRepresentant], (req, res) =>
 
     lugar.save((err, lugarDB) => {
         if (err) {
-            res.status(400).json({
-                ok: false,
-                err
-            })
+            return Response.BadRequest(err, res)
         }
 
-        res.json({
-            ok: true,
-            lugar: lugarDB
-        })
+        Response.GoodRequest(res, lugarDB)
     })
 })
 
@@ -39,25 +34,15 @@ app.get('/api/lugares', [verificarToken, verificarNotRepresentant], (req, res) =
 
     Lugar.find({ estado }).exec((err, lugares) => {
         if (err) {
-            return res.status(400).json({
-                ok: false,
-                err
-            })
+            return Response.BadRequest(err, res)
         }
 
-        Lugar.countDocuments({ estado }, (err, conteo) => {
+        Lugar.countDocuments({ estado }, (err, total) => {
             if (err) {
-                return res.status(400).json({
-                    ok: false,
-                    err
-                })
+                return Response.BadRequest(err, res)
             }
 
-            res.json({
-                ok: true,
-                total: conteo,
-                lugares
-            })
+            Response.GoodRequest(res, lugares, total)
         })
     })
 })
@@ -70,31 +55,18 @@ app.put('/api/lugar/:id', [verificarToken, verificarNotRepresentant], (req, res)
     Lugar.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' },
         (err, lugarDB) => {
             if (err) {
-                return res.status(400).json({
-                    ok: false,
-                    err
-                })
+                return Response.BadRequest(err, res)
             }
 
             if (!lugarDB) {
-                return res.status(400).json({
-                    ok: false,
-                    err: {
-                        message: 'No existe ese lugar, id inválido'
-                    }
-                })
+                return Response.BadRequest(err, res, 'No existe ese lugar, id inválido')
             }
 
             if (lugarDB.estado === false) {
-                return res.status(400).json({
-                    ok: false,
-                    err: {
-                        message: 'El lugar está actualmente borrado.'
-                    }
-                })
+                return Response.BadRequest(err, res, 'El lugar está actualmente borrado.')
             }
 
-            res.status(204).json()
+            return Response.GoodRequest(res)
         })
 })
 
@@ -109,31 +81,18 @@ app.delete('/api/lugar/:id', [verificarToken, verificarNotRepresentant], (req, r
     Lugar.findByIdAndUpdate(id, cambiarEstado, { runValidators: true, context: 'query' },
         (err, lugarDB) => {
             if (err) {
-                return res.status(400).json({
-                    ok: false,
-                    err
-                })
+                return Response.BadRequest(err, res)
             }
 
             if (!lugarDB) {
-                return res.status(400).json({
-                    ok: false,
-                    err: {
-                        message: 'No existe ese lugar, id inválido'
-                    }
-                })
+                return Response.BadRequest(err, res, 'No existe ese lugar, id inválido')
             }
 
             if (lugarDB.estado === false) {
-                return res.status(400).json({
-                    ok: false,
-                    err: {
-                        message: 'El lugar está actualmente borrado.'
-                    }
-                })
+                return Response.BadRequest(err, res, 'El lugar está actualmente borrado.')
             }
 
-            res.status(204).json()
+            Response.GoodRequest(res)
         })
 })
 
@@ -148,31 +107,18 @@ app.put('/api/lugar/:id/restaurar', [verificarToken, verificarNotRepresentant], 
     Lugar.findByIdAndUpdate(id, cambiarEstado, { runValidators: true, context: 'query' },
         (err, lugarDB) => {
             if (err) {
-                return res.status(400).json({
-                    ok: false,
-                    err
-                })
+                return Response.BadRequest(err, res)
             }
 
             if (!lugarDB) {
-                return res.status(400).json({
-                    ok: false,
-                    err: {
-                        message: 'No existe ese lugar, id inválido'
-                    }
-                })
+                return Response.BadRequest(err, res, 'No existe ese lugar, id inválido')
             }
 
             if (lugarDB.estado === true) {
-                return res.status(400).json({
-                    ok: false,
-                    err: {
-                        message: 'El lugar actualmente no está borrado.'
-                    }
-                })
+                return Response.BadRequest(err, res, 'El lugar actualmente no está borrado.')
             }
 
-            res.status(204).json()
+            Response.GoodRequest(res)
         })
 })
 

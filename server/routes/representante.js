@@ -1,5 +1,6 @@
 const express = require('express')
 const Representante = require('../models/representante')
+const Response = require('../utils/response')
 const Usuario = require('../models/usuario')
 const { verificarToken, verificarNotRepresentant } = require('../middlewares/autentication')
 const _ = require('underscore')
@@ -26,10 +27,7 @@ app.post('/api/representante', [verificarToken, verificarNotRepresentant], (req,
         Usuario.findById({ _id: body.usuario }).exec((err, usuarioDB) => {
 
             if (err) {
-                return res.status(400).json({
-                    ok: false,
-                    err
-                })
+                return Response.BadRequest(err, res)
             }
 
             //Verificando si existe
@@ -37,52 +35,29 @@ app.post('/api/representante', [verificarToken, verificarNotRepresentant], (req,
 
                 //Verificando si tiene el rol apto
                 if (usuarioDB.rol != 'REPRESENTANT_ROLE') {
-                    return res.status(400).json({
-                        ok: false,
-                        err: {
-                            message: 'El Usuario no puede ser asignado, no tiene el rol de Representante'
-                        }
-                    })
+                    return Response.BadRequest(err, res, 'El Usuario no puede ser asignado, no tiene el rol de Representante')
                 }
 
             } else {
-                return res.status(400).json({
-                    ok: false,
-                    err: {
-                        message: 'El Usuario no existe, id inválido'
-                    }
-                })
+                return Response.BadRequest(err, res, 'El Usuario no existe, id inválido')
             }
 
             //Guardar representante
             representante.save((err, representanteDB) => {
                 if (err) {
-                    return res.status(400).json({
-                        ok: false,
-                        err
-                    })
+                    return Response.BadRequest(err, res)
                 }
 
-                res.json({
-                    ok: true,
-                    representante: representanteDB
-                })
+                Response.GoodRequest(res, representanteDB)
             })
         })
     } else {
         //Guardar representante
         representante.save((err, representanteDB) => {
             if (err) {
-                return res.status(400).json({
-                    ok: false,
-                    err
-                })
+                return Response.BadRequest(err, res)
             }
-
-            res.json({
-                ok: true,
-                representante: representanteDB
-            })
+            Response.GoodRequest(res, representanteDB)
         })
     }
 })
@@ -94,18 +69,12 @@ app.get('/api/representantes', [verificarToken, verificarNotRepresentant], (req,
 
     Representante.find({ estado }).populate({ path: 'usuario', model: 'usuario' }).exec((err, representantes) => {
         if (err) {
-            return res.status(400).json({
-                ok: false,
-                err
-            })
+            return Response.BadRequest(err, res)
         }
 
         Representante.countDocuments({ estado }, (err, conteo) => {
             if (err) {
-                return res.status(400).json({
-                    ok: false,
-                    err
-                })
+                return Response.BadRequest(err, res)
             }
 
             res.json({
@@ -121,15 +90,12 @@ app.get('/api/representantes', [verificarToken, verificarNotRepresentant], (req,
 app.put('/api/representante/:id', [verificarToken, verificarNotRepresentant], (req, res) => {
     let id = req.params.id
     let body = _.pick(req.body, ['nombre', 'apellido', 'email', 'cedula', 'direccion', 'telefono', 'usuario'])
-    
+
     if (body.usuario) {
         Usuario.findById({ _id: body.usuario }).exec((err, usuarioDB) => {
 
             if (err) {
-                return res.status(400).json({
-                    ok: false,
-                    err
-                })
+                return Response.BadRequest(err, res)
             }
 
             //Verificando si existe
@@ -137,82 +103,46 @@ app.put('/api/representante/:id', [verificarToken, verificarNotRepresentant], (r
 
                 //Verificando si tiene el rol apto
                 if (usuarioDB.rol != 'REPRESENTANT_ROLE') {
-                    return res.status(400).json({
-                        ok: false,
-                        err: {
-                            message: 'El Usuario no puede ser asignado, no tiene el rol de Representante'
-                        }
-                    })
+                    return Response.BadRequest(err, res, 'El Usuario no puede ser asignado, no tiene el rol de Representante')
                 }
 
             } else {
-                return res.status(400).json({
-                    ok: false,
-                    err: {
-                        message: 'El Usuario no existe, id inválido'
-                    }
-                })
+                return Response.BadRequest(err, res, 'El Usuario no existe, id inválido')
             }
 
             Representante.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' },
                 (err, representanteDB) => {
                     if (err) {
-                        return res.status(400).json({
-                            ok: false,
-                            err
-                        })
+                        return Response.BadRequest(err, res)
                     }
 
                     if (!representanteDB) {
-                        return res.status(400).json({
-                            ok: false,
-                            err: {
-                                message: 'No existe ese Representante, id inválido'
-                            }
-                        })
+                        return Response.BadRequest(err, res, 'El Representante no existe, id inválido')
                     }
 
                     if (representanteDB.estado === false) {
-                        return res.status(400).json({
-                            ok: false,
-                            err: {
-                                message: 'El Representante está actualmente borrado.'
-                            }
-                        })
+                        return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
                     }
 
-                    res.status(204).json()
+                    Response.GoodRequest(res)
                 })
         })
     } else {
         Representante.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' },
             (err, representanteDB) => {
                 if (err) {
-                    return res.status(400).json({
-                        ok: false,
-                        err
-                    })
+                    return Response.BadRequest(err, res)
                 }
 
                 if (!representanteDB) {
-                    return res.status(400).json({
-                        ok: false,
-                        err: {
-                            message: 'No existe ese Representante, id inválido'
-                        }
-                    })
+                    return Response.BadRequest(err, res, 'El Representante no existe, id inválido')
                 }
 
                 if (representanteDB.estado === false) {
-                    return res.status(400).json({
-                        ok: false,
-                        err: {
-                            message: 'El Representante está actualmente borrado.'
-                        }
-                    })
+                    return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
                 }
 
-                res.status(204).json()
+                Response.GoodRequest(res)
             })
     }
 
@@ -229,31 +159,18 @@ app.delete('/api/representante/:id', [verificarToken, verificarNotRepresentant],
     Representante.findByIdAndUpdate(id, cambiarEstado, { runValidators: true, context: 'query' },
         (err, representanteDB) => {
             if (err) {
-                return res.status(400).json({
-                    ok: false,
-                    err
-                })
+                return Response.BadRequest(err, res)
             }
 
             if (!representanteDB) {
-                return res.status(400).json({
-                    ok: false,
-                    err: {
-                        message: 'No existe ese Representante, id inválido'
-                    }
-                })
+                return Response.BadRequest(err, res, 'El Representante no existe, id inválido')
             }
 
             if (representanteDB.estado === false) {
-                return res.status(400).json({
-                    ok: false,
-                    err: {
-                        message: 'El Representante está actualmente borrado.'
-                    }
-                })
+                return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
             }
 
-            res.status(204).json()
+            Response.GoodRequest(res)
         })
 })
 
@@ -268,31 +185,18 @@ app.put('/api/representante/:id/restaurar', [verificarToken, verificarNotReprese
     Representante.findByIdAndUpdate(id, cambiarEstado, { runValidators: true, context: 'query' },
         (err, representanteDB) => {
             if (err) {
-                return res.status(400).json({
-                    ok: false,
-                    err
-                })
+                return Response.BadRequest(err, res)
             }
 
             if (!representanteDB) {
-                return res.status(400).json({
-                    ok: false,
-                    err: {
-                        message: 'No existe ese Representante, id inválido'
-                    }
-                })
+                return Response.BadRequest(err, res, 'El Representante no existe, id inválido')
             }
 
             if (representanteDB.estado === true) {
-                return res.status(400).json({
-                    ok: false,
-                    err: {
-                        message: 'El Representante actualmente no está borrado.'
-                    }
-                })
+                return Response.BadRequest(err, res, 'El Representante no está Borrado')
             }
 
-            res.status(204).json()
+            Response.GoodRequest(res)
         })
 })
 

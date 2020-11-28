@@ -1,5 +1,6 @@
 const express = require('express')
 const Pregunta = require('../models/pregunta')
+const Response = require('../utils/response')
 const {
   verificarToken,
   verificarNotRepresentant
@@ -22,12 +23,7 @@ app.post('/api/pregunta', [verificarToken, verificarNotRepresentant], (req, res)
     if (body.opciones != undefined) {
       pregunta.opciones = body.opciones
     } else {
-      return res.status(400).json({
-        ok: false,
-        err: {
-          message: 'Las Opciones de la preguntas, son necesarias'
-        }
-      })
+      return Response.BadRequest(err, res, 'Las Opciones de la preguntas, son necesarias')
     }
   } else {
     pregunta.opciones = undefined
@@ -35,16 +31,10 @@ app.post('/api/pregunta', [verificarToken, verificarNotRepresentant], (req, res)
 
   pregunta.save((err, preguntaDB) => {
     if (err) {
-      return res.status(400).json({
-        ok: false,
-        err
-      })
+      return Response.BadRequest(err, res)
     }
 
-    res.json({
-      ok: true,
-      pregunta: preguntaDB
-    })
+    Response.BadRequest(res, preguntaDB)
   })
 })
 
@@ -55,25 +45,15 @@ app.get('/api/preguntas', verificarToken, (req, res) => {
 
   Pregunta.find({ estado }).exec((err, preguntas) => {
     if (err) {
-      return res.status(400).json({
-        ok: false,
-        err
-      })
+      return Response.BadRequest(err, res)
     }
 
     Pregunta.countDocuments({ estado }, (err, conteo) => {
       if (err) {
-        return res.status(400).json({
-          ok: false,
-          err
-        })
+        return Response.BadRequest(err, res)
       }
 
-      res.json({
-        ok: true,
-        total: conteo,
-        preguntas
-      })
+      Response.GoodRequest(res, preguntas, conteo)
     })
   })
 })
@@ -85,21 +65,11 @@ app.put('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], (req, r
 
   if (body.tipo == 'SELECCION' || body.tipo == 'MULTIPLE') {
     if (body.opciones == undefined) {
-      return res.status(400).json({
-        ok: false,
-        err: {
-          message: 'Las Opciones de la preguntas, son necesarias'
-        }
-      })
+      return Response.BadRequest(err, res, 'Las Opciones de la preguntas, son necesarias')
     }
     //esto da true cuando opciones no es un array para postman necesita mas de un valor para ser array
     if (body.opciones.includes("")) {
-      return res.status(400).json({
-        ok: false,
-        err: {
-          message: 'No se aceptan opciones vacias o una sola opción'
-        }
-      })
+      return Response.BadRequest(err, res, 'No se aceptan opciones vacias o una sola opción')
     }
   } else {
     //Si es SN no importa si vienen opciones, las vacia antes de editar
@@ -109,31 +79,18 @@ app.put('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], (req, r
   Pregunta.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' },
     (err, preguntaDB) => {
       if (err) {
-        return res.status(400).json({
-          ok: false,
-          err
-        })
+        return Response.BadRequest(err, res)
       }
 
       if (!preguntaDB) {
-          return res.status(400).json({
-          ok: false,
-          err:{
-            message: 'No existe esa pregunta'
-          }
-        })
+        return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
       }
 
       if (preguntaDB.estado === false) {
-        return res.status(400).json({
-          ok: false,
-          err: {
-            message: 'La pregunta está actualmente borrada.'
-          }
-        })
+        return Response.BadRequest(err, res, 'La pregunta está actualmente borrada.')
       }
 
-      res.status(204).json()
+      Response.GoodRequest(res)
     }
   )
 })
@@ -149,61 +106,38 @@ app.delete('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], (req
   Formulario.find({ pregunta: id }).exec((err, formularioDB) => {
 
     if (err) {
-      return res.status(400).json({
-        ok: false,
-        err
-      })
+      return Response.BadRequest(err, res)
     }
 
     if (formularioDB[0] != undefined) {
       Pregunta.findByIdAndUpdate(id, cambiarEstado, (err, preguntaEliminada) => {
         if (err) {
-          return res.status(400).json({
-            ok: false,
-            err
-          })
+          return Response.BadRequest(err, res)
         }
 
         if (!preguntaEliminada) {
-          return res.status(400).json({
-            ok: false,
-            err: {
-              message: 'La pregunta no existe.'
-            }
-          })
+          return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
         }
 
         if (preguntaEliminada.estado === false) {
-          return res.status(400).json({
-            ok: false,
-            err: {
-              message: 'La pregunta está actualmente borrada.'
-            }
-          })
+          return Response.BadRequest(err, res, 'La pregunta está actualmente borrada.')
         }
 
-        res.status(204).json()
+        Response.GoodRequest(res)
       })
+
     } else {
       Pregunta.findByIdAndRemove(id, (err, preguntaDB) => {
 
         if (err) {
-          return res.status(500).json({
-            ok: false,
-            err
-          });
+          return Response.BadRequest(err, res)
         }
 
         if (!preguntaDB) {
-          return res.status(400).json({
-            ok: false,
-            err: {
-              message: 'El id no existe'
-            }
-          });
+          return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
         }
 
-        res.status(204).json()
+        Response.GoodRequest(res)
       });
     }
   })
@@ -221,31 +155,18 @@ app.put('/api/pregunta/:id/restaurar', [verificarToken, verificarNotRepresentant
 
   Pregunta.findByIdAndUpdate(id, cambiarEstado, (err, preguntaRestaurada) => {
     if (err) {
-      return res.status(400).json({
-        ok: false,
-        err
-      })
+      return Response.BadRequest(err, res)
     }
 
     if (!preguntaRestaurada) {
-      return res.status(400).json({
-        ok: false,
-        err: {
-          message: 'La pregunta no existe.'
-        }
-      })
+      return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
     }
 
     if (preguntaRestaurada.estado === true) {
-      return res.status(400).json({
-        ok: false,
-        err: {
-          message: 'La pregunta actualmente no está borrada.'
-        }
-      })
+      return Response.BadRequest(err, res, 'La pregunta actualmente no está borrada.')
     }
 
-    res.status(204).json()
+    Response.GoodRequest(res)
   })
 })
 

@@ -1,4 +1,5 @@
 const express = require('express')
+const Response = require('../utils/response')
 const bcrypt = require('bcrypt')
 const Usuario = require('../models/usuario')
 const { verificarToken, verificarAdmin_Rol } = require('../middlewares/autentication')
@@ -7,31 +8,20 @@ const app = express()
 
 //obtener todos los usuarios enviandoles el estado
 app.get('/api/usuarios', verificarToken, (req, res) => {
- 
+
   // el estado por defecto es true, solo acepta estado falso por la url
- const estado = req.query.estado === 'false' ? false : true
+  const estado = req.query.estado === 'false' ? false : true
 
   Usuario.find({ estado }, 'nombre apellido email rol estado activado avatar').exec(
     (err, usuarios) => {
       if (err) {
-        return res.status(400).json({
-          ok: false,
-          err
-        })
+        return Response.BadRequest(err, res)
       }
       Usuario.countDocuments({ estado }, (err, conteo) => {
         if (err) {
-          return res.status(400).json({
-            ok: false,
-            err
-          })
+          return Response.BadRequest(err, res)
         }
-
-        res.json({
-          ok: true,
-          total: conteo,
-          usuarios
-        })
+        Response.GoodRequest(res, usuarios, conteo)
       })
     }
   )
@@ -54,16 +44,10 @@ app.post('/api/usuario', [verificarToken, verificarAdmin_Rol], (req, res) => {
 
   usuario.save((err, usuarioDB) => {
     if (err) {
-      return res.status(400).json({
-        ok: false,
-        err
-      })
+      return Response.BadRequest(err, res)
     }
 
-    res.json({
-      ok: true,
-      usuario: usuarioDB
-    })
+    return Response.GoodRequest(res, usuarioDB)
   })
 })
 
@@ -80,13 +64,15 @@ app.put('/api/usuario/:id', [verificarToken, verificarAdmin_Rol], (req, res) => 
     { new: true, runValidators: true, context: 'query' },
     (err, usuarioDB) => {
       if (err) {
-        return res.status(400).json({
-          ok: false,
-          err
-        })
+        return Response.BadRequest(err, res)
       }
-
-      res.status(204).json()
+      if (!usuarioDB) {
+        return Response.BadRequest(err, res, 'No se encontró al usuario, id inválido')
+      }
+      if (usuarioDB.estado == false) {
+        return Response.BadRequest(err, res, 'El usuario está actualmente Borrado')
+      }
+      Response.GoodRequest(res)
     }
   )
 })
@@ -101,31 +87,18 @@ app.delete('/api/usuario/:id', [verificarToken, verificarAdmin_Rol], (req, res) 
 
   Usuario.findByIdAndUpdate(id, cambiarEstado, (err, usuarioBorrado) => {
     if (err) {
-      return res.status(400).json({
-        ok: false,
-        err
-      })
+      return Response.BadRequest(err, res)
     }
 
     if (!usuarioBorrado) {
-      return res.status(400).json({
-        ok: false,
-        err: {
-          message: 'El usuario no existe.'
-        }
-      })
+      return Response.BadRequest(err, res, 'El usuario no existe')
     }
 
     if (usuarioBorrado.estado === false) {
-      return res.status(400).json({
-        ok: false,
-        err: {
-          message: 'El usuario está actualmente borrado.'
-        }
-      })
+      return Response.BadRequest(err, res, 'El usuario está actualmente borrado.')
     }
 
-    res.status(204).json()
+    Response.GoodRequest(res)
   })
 })
 

@@ -1,4 +1,5 @@
 const express = require('express')
+const Response = require('../utils/response')
 const FormularioRepresentante = require('../models/formularioRepresentante')
 const { verificarToken, verificarNotRepresentant } = require('../middlewares/autentication')
 const _ = require('underscore')
@@ -18,16 +19,10 @@ app.post('/api/formularioRepresentante', [verificarToken, verificarNotRepresenta
 
     formularioRepresentante.save((err, formularioRepreDB) => {
         if (err) {
-            return res.status(400).json({
-                ok: false,
-                err
-            })
+            return Response.BadRequest(err, res)
         }
 
-        res.json({
-            ok: true,
-            formularioRepresentante: formularioRepreDB
-        })
+        Response.GoodRequest(res, formularioRepreDB)
     })
 })
 

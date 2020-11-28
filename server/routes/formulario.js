@@ -1,4 +1,5 @@
 const express = require('express');
+const Response = require('../utils/response')
 const Formulario = require('../models/formulario');
 const { verificarToken, verificarNotRepresentant } = require('../middlewares/autentication');
 const _ = require('underscore')
@@ -16,16 +17,9 @@ app.post('/api/formulario', [verificarToken, verificarNotRepresentant], (req, re
 
     formulario.save((err, formularioDB) => {
         if (err) {
-            return res.status(400).json({
-                ok: false,
-                err
-            })
+            return Response.BadRequest(err, res)
         }
-
-        res.json({
-            ok: true,
-            formulario: formularioDB
-        })
+        Response.GoodRequest(res, formularioDB)
     })
 })
 
@@ -41,25 +35,15 @@ app.get('/api/formularios', [verificarToken, verificarNotRepresentant], (req, re
         .exec((err, formularios) => {
 
             if (err) {
-                return res.status(400).json({
-                    ok: false,
-                    err
-                })
+                return Response.BadRequest(err, res)
             }
 
             Formulario.countDocuments({ estado }, (err, conteo) => {
                 if (err) {
-                    return res.status(400).json({
-                        ok: false,
-                        err
-                    })
+                    return Response.BadRequest(err, res)
                 }
 
-                res.json({
-                    ok: true,
-                    total: conteo,
-                    formularios
-                })
+                Response.GoodRequest(res, formularios, conteo)
             })
         })
 })
@@ -74,34 +58,19 @@ app.get('/api/formulario/:id', [verificarToken, verificarNotRepresentant], (req,
         .populate({ path: 'pregunta', model: 'pregunta' })
         .exec((err, formularioDB) => {
             if (err) {
-                return res.status(400).json({
-                    ok: false,
-                    err
-                })
+                return Response.BadRequest(err, res)
             }
 
             if (!formularioDB) {
-                return res.status(400).json({
-                    ok: false,
-                    err: {
-                        message: 'El id no es válido'
-                    }
-                })
+                return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
             }
 
+            //Si es true no pasa, si es false, llega y da el res
             if (!formularioDB.estado) {
-                return res.status(400).json({
-                    ok: false,
-                    err: {
-                        message: 'El formulario está actualmente eliminado'
-                    }
-                })
+                return Response.BadRequest(err, res, 'El formulario actualmente está borrado.')
             }
 
-            res.json({
-                ok: true,
-                formulario: formularioDB
-            })
+            Response.GoodRequest(res, formularioDB)
         })
 })
 
@@ -113,12 +82,7 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], (req,
     let body = _.pick(req.body, ['tipo', 'pregunta', 'realizadoPor'])
 
     if (body.pregunta == '') {
-        return res.status(400).json({
-            ok: false,
-            err: {
-                message: 'El formulario debe tener preguntas'
-            }
-        })
+        return Response.BadRequest(err, res, 'El formulario debe tener preguntas')
     }
 
     Formulario.findByIdAndUpdate(
@@ -127,22 +91,18 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], (req,
         { runValidators: true, context: 'query' },
         (err, formularioDB) => {
             if (err) {
-                return res.status(400).json({
-                    ok: false,
-                    err
-                })
+                return Response.BadRequest(err, res)
+            }
+
+            if (!formularioDB) {
+                return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
             }
 
             if (formularioDB.estado === false) {
-                return res.status(400).json({
-                    ok: false,
-                    err: {
-                        message: 'El formulario está actualmente borrado.'
-                    }
-                })
+                return Response.BadRequest(err, res, 'El formulario actualmente está borrado.')
             }
 
-            res.status(204).json()
+            Response.GoodRequest(res)
         }
     )
 })
@@ -157,31 +117,18 @@ app.delete('/api/formulario/:id', [verificarToken, verificarNotRepresentant], (r
 
     Formulario.findByIdAndUpdate(id, cambiarEstado, (err, formularioBorrado) => {
         if (err) {
-            return res.status(400).json({
-                ok: false,
-                err
-            })
+            return Response.BadRequest(err, res)
         }
 
         if (!formularioBorrado) {
-            return res.status(400).json({
-                ok: false,
-                err: {
-                    message: 'El formulario no existe.'
-                }
-            })
+            return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
         }
 
         if (formularioBorrado.estado === false) {
-            return res.status(400).json({
-                ok: false,
-                err: {
-                    message: 'El formulario está actualmente borrado.'
-                }
-            })
+            return Response.BadRequest(err, res, 'El formulario actualmente está borrado.')
         }
 
-        res.status(204).json()
+        Response.GoodRequest(res)
     })
 })
 
@@ -195,31 +142,18 @@ app.put('/api/formulario/:id/restaurar', [verificarToken, verificarNotRepresenta
 
     Formulario.findByIdAndUpdate(id, cambiarEstado, (err, formularioRestaurado) => {
         if (err) {
-            return res.status(400).json({
-                ok: false,
-                err
-            })
+            return Response.BadRequest(err, res)
         }
 
         if (!formularioRestaurado) {
-            return res.status(400).json({
-                ok: false,
-                err: {
-                    message: 'El formulario no existe.'
-                }
-            })
+            return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
         }
 
         if (formularioRestaurado.estado === true) {
-            return res.status(400).json({
-                ok: false,
-                err: {
-                    message: 'El formulario actualmente no está borrado.'
-                }
-            })
+            return Response.BadRequest(err, res, 'El formulario actualmente no está borrado.')
         }
 
-        res.status(204).json()
+        Response.GoodRequest(res)
     })
 })
 

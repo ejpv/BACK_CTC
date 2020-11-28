@@ -8,9 +8,17 @@ const app = express()
 
 // Agregar avatar al usuario
 app.post('/api/avatar/usuario/:id', [verificarToken], (req, res) => {
-  const usuarioId = req.params.id
-  Usuario.findById(usuarioId, (err, usuario) => {
-    Response.BadRequest(err, res)
+  const id = req.params.id
+  Usuario.findById(id, (err, usuarioDB) => {
+    if (err) {
+      return Response.BadRequest(err, res)
+    }
+
+    if (!usuarioDB) {
+      return Response.BadRequest(err, res, 'No existe el usuario, id inválido')
+    }
+
+
 
     // configuración del almacenamiento
     var storage = multer.diskStorage({
@@ -28,19 +36,24 @@ app.post('/api/avatar/usuario/:id', [verificarToken], (req, res) => {
 
     // actualizar la url del avatar
     upload(req, res, err => {
-      Response.BadRequest(err, res)
+      if (err) {
+        return Response.BadRequest(err, res)
+      }
+      
+      if (!req.file) {
+        return Response.BadRequest(err, res, 'No se pudo encontrar el Archivo')
+      }
       const url = process.env.DOMAIN + '/image/' + req.file.filename
 
       Usuario.findByIdAndUpdate(
-        usuarioId,
+        id,
         { avatar: url },
         { new: true, runValidators: true },
         err => {
-          Response.BadRequest(err, res)
-          res.json({
-            ok: true,
-            url
-          })
+          if (err) {
+            return Response.BadRequest(err, res)
+          }
+          return Response.GoodRequest(res, url)
         }
       )
     })
