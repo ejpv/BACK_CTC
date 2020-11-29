@@ -76,12 +76,7 @@ app.get('/api/representantes', [verificarToken, verificarNotRepresentant], (req,
             if (err) {
                 return Response.BadRequest(err, res)
             }
-
-            res.json({
-                ok: true,
-                total: conteo,
-                representantes
-            })
+            Response.GoodRequest(res, representantes, conteo)
         })
     })
 })

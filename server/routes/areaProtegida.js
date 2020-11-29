@@ -19,7 +19,7 @@ app.post('/api/areaProtegida', [verificarToken, verificarNotRepresentant], (req,
             return Response.BadRequest(err, res)
         }
 
-        Response.GoodRequest(res, areaProtegidaDB, conteo)
+        Response.GoodRequest(res, areaProtegidaDB)
     })
 })
 
