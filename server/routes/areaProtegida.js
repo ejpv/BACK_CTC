@@ -73,8 +73,7 @@ app.delete('/api/areaProtegida/:id', [verificarToken, verificarNotRepresentant],
         estado: false
     }
 
-    AreaProtegida.findByIdAndUpdate(id, cambiarEstado, { runValidators: true, context: 'query' },
-        (err, areaProtegidaDB) => {
+    AreaProtegida.findByIdAndUpdate(id, cambiarEstado, (err, areaProtegidaDB) => {
             if (err) {
                 return Response.BadRequest(err, res)
             }
@@ -99,8 +98,7 @@ app.put('/api/areaProtegida/:id/restaurar', [verificarToken, verificarNotReprese
         estado: true
     }
 
-    AreaProtegida.findByIdAndUpdate(id, cambiarEstado, { runValidators: true, context: 'query' },
-        (err, areaProtegidaDB) => {
+    AreaProtegida.findByIdAndUpdate(id, cambiarEstado, (err, areaProtegidaDB) => {
             if (err) {
                 return Response.BadRequest(err, res)
             }

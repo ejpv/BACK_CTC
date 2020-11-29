@@ -151,8 +151,7 @@ app.delete('/api/representante/:id', [verificarToken, verificarNotRepresentant],
         estado: false
     }
 
-    Representante.findByIdAndUpdate(id, cambiarEstado, { runValidators: true, context: 'query' },
-        (err, representanteDB) => {
+    Representante.findByIdAndUpdate(id, cambiarEstado, (err, representanteDB) => {
             if (err) {
                 return Response.BadRequest(err, res)
             }
@@ -177,8 +176,7 @@ app.put('/api/representante/:id/restaurar', [verificarToken, verificarNotReprese
         estado: true
     }
 
-    Representante.findByIdAndUpdate(id, cambiarEstado, { runValidators: true, context: 'query' },
-        (err, representanteDB) => {
+    Representante.findByIdAndUpdate(id, cambiarEstado, (err, representanteDB) => {
             if (err) {
                 return Response.BadRequest(err, res)
             }

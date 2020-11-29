@@ -78,8 +78,7 @@ app.delete('/api/lugar/:id', [verificarToken, verificarNotRepresentant], (req, r
         estado: false
     }
 
-    Lugar.findByIdAndUpdate(id, cambiarEstado, { runValidators: true, context: 'query' },
-        (err, lugarDB) => {
+    Lugar.findByIdAndUpdate(id, cambiarEstado, (err, lugarDB) => {
             if (err) {
                 return Response.BadRequest(err, res)
             }
@@ -104,8 +103,7 @@ app.put('/api/lugar/:id/restaurar', [verificarToken, verificarNotRepresentant], 
         estado: true
     }
 
-    Lugar.findByIdAndUpdate(id, cambiarEstado, { runValidators: true, context: 'query' },
-        (err, lugarDB) => {
+    Lugar.findByIdAndUpdate(id, cambiarEstado, (err, lugarDB) => {
             if (err) {
                 return Response.BadRequest(err, res)
             }
