@@ -44,8 +44,8 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], (re
             // ambos ids
             // o solo un, y cual de esos
             if (establecimiento.areaProtegida && establecimiento.representante) { toDo = 3 } else {
-                if (establecimiento.areaProtegida) { toDo = 2 }
-                if (establecimiento.representante) { toDo = 1 }
+                if (establecimiento.areaProtegida) toDo = 2
+                if (establecimiento.representante) toDo = 1 
             }
 
             //el switch realiza la acción y comprobaciones de cada una dependiendo de la combinación

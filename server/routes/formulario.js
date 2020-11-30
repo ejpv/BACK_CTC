@@ -53,7 +53,7 @@ app.get('/api/formulario/:id', [verificarToken, verificarNotRepresentant], (req,
 
     let id = req.params.id
 
-    Formulario.findById({ _id: id })
+    Formulario.findById(id)
         .populate({ path: 'realizadoPor', model: 'usuario' })
         .populate({ path: 'pregunta', model: 'pregunta' })
         .exec((err, formularioDB) => {
@@ -82,29 +82,30 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], (req,
     let body = _.pick(req.body, ['tipo', 'pregunta', 'realizadoPor'])
 
     if (body.pregunta == '') {
-        return Response.BadRequest(err, res, 'El formulario debe tener preguntas')
+        return Response.BadRequest(null, res, 'El formulario debe tener preguntas')
+    } else {
+
+        Formulario.findByIdAndUpdate(
+            id,
+            body,
+            { runValidators: true, context: 'query' },
+            (err, formularioDB) => {
+                if (err) {
+                    return Response.BadRequest(err, res)
+                }
+
+                if (!formularioDB) {
+                    return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
+                }
+
+                if (formularioDB.estado === false) {
+                    return Response.BadRequest(err, res, 'El formulario actualmente está borrado.')
+                }
+
+                Response.GoodRequest(res)
+            }
+        )
     }
-
-    Formulario.findByIdAndUpdate(
-        id,
-        body,
-        { runValidators: true, context: 'query' },
-        (err, formularioDB) => {
-            if (err) {
-                return Response.BadRequest(err, res)
-            }
-
-            if (!formularioDB) {
-                return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
-            }
-
-            if (formularioDB.estado === false) {
-                return Response.BadRequest(err, res, 'El formulario actualmente está borrado.')
-            }
-
-            Response.GoodRequest(res)
-        }
-    )
 })
 
 //eliminar un formulario por id
