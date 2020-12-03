@@ -6,7 +6,6 @@ const Representante = require('../models/representante');
 const AreaProtegida = require('../models/areaProtegida');
 const { verificarToken, verificarNotRepresentant } = require('../middlewares/autentication');
 const _ = require('underscore');
-const representante = require('../models/representante');
 const app = express();
 
 //crear establecimiento

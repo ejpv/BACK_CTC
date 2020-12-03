@@ -12,5 +12,6 @@ app.use(require('./lugar'))
 app.use(require('./areaProtegida'))
 app.use(require('./representante'))
 app.use(require('./establecimiento'))
+app.use(require('./informe'))
 
 module.exports = app

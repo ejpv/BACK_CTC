@@ -1,82 +1,120 @@
 const express = require('express');
 const Response = require('../utils/response')
 const Formulario = require('../models/formulario');
+const Pregunta = require('../models/pregunta');
 const { verificarToken, verificarNotRepresentant } = require('../middlewares/autentication');
 const _ = require('underscore')
 const app = express();
 
 //crear formulario
-app.post('/api/formulario', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.post('/api/formulario', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let body = req.body
+
+    let errors = {
+        err: 0,
+        idErr: [],
+        notFound: 0,
+        idNotFound: [],
+        erased: 0,
+        idErased: []
+    }
 
     let formulario = new Formulario({
         tipo: body.tipo,
         pregunta: body.pregunta,
         realizadoPor: req.usuario._id
+        
     })
 
-    formulario.save((err, formularioDB) => {
-        if (err) {
-            return Response.BadRequest(err, res)
-        }
-        Response.GoodRequest(res, formularioDB)
-    })
+    for (let i = 0; i < formulario.pregunta.length; i++) {
+        await Pregunta.findById(formulario.pregunta[i], (err, result) => {
+            if (err) {
+                errors.err += 1
+                errors.idErr.push(i)
+            }
+            if (!result) {
+                errors.notFound += 1
+                errors.idNotFound.push(i)
+            }
+            else {
+                if (result.estado == false) {
+                    errors.erased += 1
+                    errors.idErased.push(i)
+                }
+            }
+        })
+    }
+
+    if (errors.err == 0 && errors.notFound == 0 && errors.erased == 0) {
+        await formulario.save((err, formularioDB) => {
+            if (err) return Response.BadRequest(err, res)
+            Response.GoodRequest(res, formularioDB)
+        })
+    } else {
+        Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos, ' + errors.erased + ' errores de entidades borradas, y ' + errors.notFound + ' errores de entidades no encontradas.' })
+        Response.BadRequest(errors, res)
+    }
 })
 
 //obtener todos los formularios
-app.get('/api/formularios', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.get('/api/formularios', [verificarToken, verificarNotRepresentant], async (req, res) => {
 
     // el estado por defecto es true, solo acepta estado falso por la url
     const estado = req.query.estado === 'false' ? false : true
 
-    Formulario.find({ estado })
+    await Formulario.find({ estado })
         .populate({ path: 'realizadoPor', model: 'usuario' })
         .populate({ path: 'pregunta', model: 'pregunta' })
-        .exec((err, formularios) => {
+        .exec(async (err, formularios) => {
 
             if (err) {
                 return Response.BadRequest(err, res)
             }
 
-            Formulario.countDocuments({ estado }, (err, conteo) => {
+            await Formulario.countDocuments({ estado }, (err, conteo) => {
                 if (err) {
                     return Response.BadRequest(err, res)
                 }
 
-                Response.GoodRequest(res, formularios, conteo)
+                return Response.GoodRequest(res, formularios, conteo)
             })
         })
 })
 
 //obtener un formulario por id
-app.get('/api/formulario/:id', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.get('/api/formulario/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
 
     let id = req.params.id
 
-    Formulario.findById(id)
+    await Formulario.findById(id)
         .populate({ path: 'realizadoPor', model: 'usuario' })
         .populate({ path: 'pregunta', model: 'pregunta' })
         .exec((err, formularioDB) => {
             if (err) {
                 return Response.BadRequest(err, res)
             }
-
-            if (!formularioDB) {
-                return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
-            }
+            console.log(formularioDB);
+            if (!formularioDB) return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
 
             //Si es true no pasa, si es false, llega y da el res
-            if (!formularioDB.estado) {
-                return Response.BadRequest(err, res, 'El formulario actualmente está borrado.')
-            }
+            if (!formularioDB.estado) return Response.BadRequest(err, res, 'El formulario actualmente está borrado.')
 
             Response.GoodRequest(res, formularioDB)
         })
 })
 
 //editar un formulario por id
-app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
+
+    let errors = {
+        err: 0,
+        idErr: [],
+        notFound: 0,
+        idNotFound: [],
+        erased: 0,
+        idErased: []
+    }
 
     //_.pick es filtrar y solo elegir esas del body
     let body = _.pick(req.body, ['tipo', 'pregunta', 'realizadoPor'])
@@ -84,27 +122,41 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], (req,
     if (body.pregunta == '') {
         return Response.BadRequest(null, res, 'El formulario debe tener preguntas')
     } else {
-
-        Formulario.findByIdAndUpdate(
-            id,
-            body,
-            { runValidators: true, context: 'query' },
-            (err, formularioDB) => {
+        for (let i = 0; i < body.pregunta.length; i++) {
+            await Pregunta.findById(body.pregunta[i], (err, result) => {
                 if (err) {
-                    return Response.BadRequest(err, res)
+                    errors.err += 1
+                    errors.idErr.push(i)
                 }
-
-                if (!formularioDB) {
-                    return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
+                if (!result) {
+                    errors.notFound += 1
+                    errors.idNotFound.push(i)
                 }
-
-                if (formularioDB.estado === false) {
-                    return Response.BadRequest(err, res, 'El formulario actualmente está borrado.')
+                else {
+                    if (result.estado == false) {
+                        errors.erased += 1
+                        errors.idErased.push(i)
+                    }
                 }
+            })
+        }
 
-                Response.GoodRequest(res)
-            }
-        )
+        if (errors.err == 0 && errors.notFound == 0 && errors.erased == 0) {
+            await Formulario.findByIdAndUpdate(
+                id,
+                body,
+                { runValidators: true, context: 'query' },
+                (err, formularioDB) => {
+                    if (err) return Response.BadRequest(err, res)
+                    if (!formularioDB) return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
+                    if (formularioDB.estado === false) return Response.BadRequest(err, res, 'El formulario actualmente está borrado.')
+                    Response.GoodRequest(res)
+                }
+            )
+        } else {
+            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos, ' + errors.erased + ' errores de entidades borradas, y ' + errors.notFound + ' errores de entidades no encontradas.' })
+            Response.BadRequest(errors, res)
+        }
     }
 })
 
