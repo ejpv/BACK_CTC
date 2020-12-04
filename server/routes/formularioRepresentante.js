@@ -31,27 +31,28 @@ app.post('/api/formularioRepresentante', [verificarToken, verificarNotRepresenta
                 if (err) return Response.BadRequest(err, res)
                 if (!formularioDB) return Response.BadRequest(err, res, 'No existe el formulario, id inválido')
                 if (!formularioDB.estado) return Response.BadRequest(err, res, 'El formulario está actualmente borrado')
-            })
+                if (body.establecimiento) {
 
-            if (body.establecimiento) {
+                    formularioRepresentante.establecimiento = body.establecimiento
 
-                formularioRepresentante.establecimiento = body.establecimiento
+                    Establecimiento.findById(body.establecimiento).exec((err, establecimientoDB) => {
+                        if (err) return Response.BadRequest(err, res)
+                        if (!establecimientoDB) return Response.BadRequest(err, res, 'No existe el establecimiento, id inválido')
+                        if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El establecimiento está actualmente borrado')
 
-                Establecimiento.findById(body.establecimiento).exec((err, establecimientoDB) => {
-                    if (err) return Response.BadRequest(err, res)
-                    if (!establecimientoDB) return Response.BadRequest(err, res, 'No existe el establecimiento, id inválido')
-                    if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El establecimiento está actualmente borrado')
-
+                        formularioRepresentante.save((err, formularioRepreDB) => {
+                            if (err) return Response.BadRequest(err, res)
+                            Response.GoodRequest(res, formularioRepreDB)
+                        })
+                    })
+                } else {
                     formularioRepresentante.save((err, formularioRepreDB) => {
                         if (err) return Response.BadRequest(err, res)
-                        Response.GoodRequest(res, formularioRepreDB)
                     })
-                })
-            } else {
-                formularioRepresentante.save((err, formularioRepreDB) => {
-                    if (err) return Response.BadRequest(err, res)
-                })
-            }
+                }
+            })
+
+
         } else {
             formularioRepresentante.save((err, formularioRepreDB) => {
                 if (err) {
@@ -68,14 +69,19 @@ app.get('/api/formularioRepresentantes', [verificarToken, verificarNotRepresenta
     const estado = req.query.estado === 'false' ? false : true
 
     FormularioRepresentante.find({ estado })
-        .populate({ path: 'establecimiento', model: 'establecimiento' })
+        .populate({ path: 'ejecutadoPor', model: 'usuario' })
+        .populate({
+            path: 'establecimiento', model: 'establecimiento',
+            populate: {
+                path: 'representante', model: 'representante'
+            }
+        })
         .populate({
             path: 'formulario', model: 'formulario',
             populate: {
                 path: 'pregunta', model: 'pregunta'
             }
         })
-        .populate({ path: 'ejecutadoPor', model: 'usuario' })
         .exec((err, formularios) => {
 
             if (err) return Response.BadRequest(err, res)
@@ -93,14 +99,19 @@ app.get('/api/formularioRepresentante/:id', verificarToken, (req, res) => {
     let id = req.params.id
 
     FormularioRepresentante.findById(id)
-        .populate({ path: 'establecimiento', model: 'establecimiento' })
+        .populate({ path: 'ejecutadoPor', model: 'usuario' })
+        .populate({
+            path: 'establecimiento', model: 'establecimiento',
+            populate: {
+                path: 'representante', model: 'representante'
+            }
+        })
         .populate({
             path: 'formulario', model: 'formulario',
             populate: {
                 path: 'pregunta', model: 'pregunta'
             }
         })
-        .populate({ path: 'ejecutadoPor', model: 'usuario' })
         .exec((err, formularioDB) => {
             if (err) return Response.BadRequest(err, res)
             if (!formularioDB) return Response.BadRequest(err, res, 'El formulario no existe, id inválido')

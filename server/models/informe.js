@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 let Schema = mongoose.Schema
 
 let informeSchema = new Schema({
-    formulario: [{ type: Schema.Types.ObjectId, ref: 'formulario', required: true }],
+    formularioRepresentante: [{ type: Schema.Types.ObjectId, ref: 'formularioRepresentante', required: true }],
     conclusion: [{ type: String }],
     recomendacion: [{ type: String }],
     observacion: [{ type: String }],
