@@ -15,19 +15,13 @@ app.post('/api/login', async (req, res) => {
   }
 
   await Usuario.findOne({ email: body.email }, (err, usuarioDb) => {
-    if (err) {
-      return Response.BadRequest(err, res)
-    }
+    if (err) return Response.BadRequest(err, res)
 
     //buscando el email
-    if (!usuarioDb || usuarioDb.estado === false) {
-      return Response.BadRequest(err, res, 'El usuario no existe')
-    }
+    if (!usuarioDb || !usuarioDb.estado) return Response.BadRequest(err, res, 'El usuario no existe')
 
     //comparar contraseña encriptandola y comparando la encriptación
-    if (!bcrypt.compareSync(body.password, usuarioDb.password)) {
-      return Response.BadRequest(err, res, 'Contraseña Incorrecta')
-    }
+    if (!bcrypt.compareSync(body.password, usuarioDb.password)) return Response.BadRequest(err, res, 'Contraseña Incorrecta')
 
     //generar token
     //let token = jwt.sign({ usuario: usuarioDb }, process.env.SEED_TOKEN, process.env.CADUCIDAD_TOKEN);

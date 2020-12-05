@@ -143,7 +143,7 @@ app.put('/api/representante/:id/restaurar', [verificarToken, verificarNotReprese
     await Representante.findByIdAndUpdate(id, cambiarEstado, (err, representanteDB) => {
         if (err) return Response.BadRequest(err, res)
         if (!representanteDB) return Response.BadRequest(err, res, 'El Representante no existe, id inválido')
-        if (!representanteDB.estado) return Response.BadRequest(err, res, 'El Representante no está Borrado')
+        if (representanteDB.estado) return Response.BadRequest(err, res, 'El Representante no está Borrado')
 
         Response.GoodRequest(res)
     })

@@ -1,6 +1,7 @@
 const express = require('express')
 const Response = require('../utils/response')
 const AreaProtegida = require('../models/areaProtegida')
+const Establecimiento = require('../models/establecimiento')
 const { verificarToken, verificarNotRepresentant } = require('../middlewares/autentication')
 const _ = require('underscore')
 const app = express()
@@ -15,9 +16,7 @@ app.post('/api/areaProtegida', [verificarToken, verificarNotRepresentant], async
     })
 
     await areaProtegida.save((err, areaProtegidaDB) => {
-        if (err) {
-            return Response.BadRequest(err, res)
-        }
+        if (err) return Response.BadRequest(err, res)
 
         Response.GoodRequest(res, areaProtegidaDB)
     })
@@ -28,15 +27,11 @@ app.get('/api/areasProtegidas', [verificarToken, verificarNotRepresentant], asyn
     // el estado por defecto es true, solo acepta estado falso por la url
     const estado = req.query.estado === 'false' ? false : true
 
-    await AreaProtegida.find({ estado }).exec( async (err, areasProtegidas) => {
-        if (err) {
-            return Response.BadRequest(err, res)
-        }
+    await AreaProtegida.find({ estado }).exec(async (err, areasProtegidas) => {
+        if (err) return Response.BadRequest(err, res)
 
         await AreaProtegida.countDocuments({ estado }, (err, conteo) => {
-            if (err) {
-                return Response.BadRequest(err, res)
-            }
+            if (err) return Response.BadRequest(err, res)
             Response.GoodRequest(res, areasProtegidas, conteo)
         })
     })
@@ -49,17 +44,9 @@ app.put('/api/areaProtegida/:id', [verificarToken, verificarNotRepresentant], as
 
     await AreaProtegida.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' },
         (err, areaProtegidaDB) => {
-            if (err) {
-                return Response.BadRequest(err, res)
-            }
-
-            if (!areaProtegidaDB) {
-                return Response.BadRequest(err, res, 'No existe Area Protegida, id inválido')
-            }
-
-            if (areaProtegidaDB.estado === false) {
-                return Response.BadRequest(err, res, 'El Area Protegida actualmente está borrada.')
-            }
+            if (err) return Response.BadRequest(err, res)
+            if (!areaProtegidaDB) return Response.BadRequest(err, res, 'No existe Area Protegida, id inválido')
+            if (!areaProtegidaDB.estado) return Response.BadRequest(err, res, 'El Area Protegida actualmente está borrada.')
 
             Response.GoodRequest(res)
         })
@@ -73,21 +60,25 @@ app.delete('/api/areaProtegida/:id', [verificarToken, verificarNotRepresentant],
         estado: false
     }
 
-    await AreaProtegida.findByIdAndUpdate(id, cambiarEstado, (err, areaProtegidaDB) => {
-            if (err) {
-                return Response.BadRequest(err, res)
-            }
+    await Establecimiento.findOne({ areaProtegida: id }).exec(async (err, establecimientoDB) => {
+        if (err) return Response.BadRequest(err, res)
+        if (establecimientoDB) {
+            await AreaProtegida.findByIdAndUpdate(id, cambiarEstado, (err, areaProtegidaDB) => {
+                if (err) return Response.BadRequest(err, res)
+                if (!areaProtegidaDB) return Response.BadRequest(err, res, 'No existe Area Protegida, id inválido')
+                if (!areaProtegidaDB.estado) return Response.BadRequest(err, res, 'El Area Protegida actualmente está borrada.')
+                Response.GoodRequest(res)
+            })
+        } else {
+            await AreaProtegida.findByIdAndRemove(id, (err, areaDB) => {
+                if (err) return Response.BadRequest(err, res)
+                if (!areaDB) return Response.BadRequest(err, res, 'No existe Area Protegida, id inválido')
+                Response.GoodRequest(res)
+            })
+        }
+    })
 
-            if (!areaProtegidaDB) {
-                return Response.BadRequest(err, res, 'No existe Area Protegida, id inválido')
-            }
 
-            if (areaProtegidaDB.estado === false) {
-                return Response.BadRequest(err, res, 'El Area Protegida actualmente está borrada.')
-            }
-
-            Response.GoodRequest(res)
-        })
 })
 
 //Restaurar un areaProtegida por id
@@ -99,20 +90,12 @@ app.put('/api/areaProtegida/:id/restaurar', [verificarToken, verificarNotReprese
     }
 
     AreaProtegida.findByIdAndUpdate(id, cambiarEstado, (err, areaProtegidaDB) => {
-            if (err) {
-                return Response.BadRequest(err, res)
-            }
+        if (err) return Response.BadRequest(err, res)
+        if (!areaProtegidaDB) return Response.BadRequest(err, res, 'No existe Area Protegida, id inválido')
+        if (areaProtegidaDB.estado) return Response.BadRequest(err, res, 'El Area Protegida actualmente no está borrada.')
 
-            if (!areaProtegidaDB) {
-                return Response.BadRequest(err, res, 'No existe Area Protegida, id inválido')
-            }
-
-            if (areaProtegidaDB.estado === true) {
-                return Response.BadRequest(err, res, 'El Area Protegida actualmente no está borrada.')
-            }
-
-            Response.GoodRequest(res)
-        })
+        Response.GoodRequest(res)
+    })
 })
 
 module.exports = app

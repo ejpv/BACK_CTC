@@ -1,8 +1,10 @@
 const express = require('express')
 const Response = require('../utils/response')
 const Lugar = require('../models/lugar')
+const Establecimiento = require('../models/establecimiento')
 const { verificarToken, verificarNotRepresentant } = require('../middlewares/autentication')
 const _ = require('underscore')
+const establecimiento = require('../models/establecimiento')
 const app = express()
 
 //generar un Lugar
@@ -60,14 +62,29 @@ app.delete('/api/lugar/:id', [verificarToken, verificarNotRepresentant], async (
     let cambiarEstado = {
         estado: false
     }
-
-    await Lugar.findByIdAndUpdate(id, cambiarEstado, (err, lugarDB) => {
+    await Establecimiento.findOne({ lugar: id }, async (err, establecimientoDB) => {
         if (err) return Response.BadRequest(err, res)
-        if (!lugarDB) return Response.BadRequest(err, res, 'No existe ese lugar, id inválido')
-        if (!lugarDB.estado) return Response.BadRequest(err, res, 'El lugar está actualmente borrado.')
+        if (establecimientoDB) {
 
-        Response.GoodRequest(res)
+            await Lugar.findByIdAndUpdate(id, cambiarEstado, (err, lugarDB) => {
+                if (err) return Response.BadRequest(err, res)
+                if (!lugarDB) return Response.BadRequest(err, res, 'No existe ese lugar, id inválido')
+                if (!lugarDB.estado) return Response.BadRequest(err, res, 'El lugar está actualmente borrado.')
+
+                Response.GoodRequest(res)
+            })
+
+        } else {
+            await Lugar.findByIdAndRemove(id, (err, lugarDB) => {
+                if (err) return Response.BadRequest(err, res)
+                if (!lugarDB) return Response.BadRequest(err, res, 'No existe ese lugar, id inválido')
+
+                Response.GoodRequest(res)
+            })
+        }
+
     })
+
 })
 
 //Restaurar un lugar por id
@@ -81,7 +98,7 @@ app.put('/api/lugar/:id/restaurar', [verificarToken, verificarNotRepresentant], 
     await Lugar.findByIdAndUpdate(id, cambiarEstado, (err, lugarDB) => {
         if (err) return Response.BadRequest(err, res)
         if (!lugarDB) return Response.BadRequest(err, res, 'No existe ese lugar, id inválido')
-        if (!lugarDB.estado) return Response.BadRequest(err, res, 'El lugar actualmente no está borrado.')
+        if (lugarDB.estado) return Response.BadRequest(err, res, 'El lugar actualmente no está borrado.')
 
         Response.GoodRequest(res)
     })
