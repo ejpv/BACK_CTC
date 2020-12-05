@@ -214,17 +214,9 @@ app.get('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
         .populate({ path: 'areaProtegida', model: 'areaProtegida' })
         .populate({ path: 'representante', model: 'representante' })
         .exec((err, establecimientoDB) => {
-            if (err) {
-                return Response.BadRequest(err, res)
-            }
-
-            if (!establecimientoDB) {
-                return Response.BadRequest(err, res, 'El establecimiento no existe, id inválido')
-            }
-
-            if (!establecimientoDB.estado) {
-                return Response.BadRequest(err, res, 'El establecimiento está actualmente borrado')
-            }
+            if (err) return Response.BadRequest(err, res)
+            if (!establecimientoDB) return Response.BadRequest(err, res, 'El establecimiento no existe, id inválido')
+            if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El establecimiento está actualmente borrado')
 
             Response.GoodRequest(res, establecimientoDB)
         })
@@ -287,17 +279,10 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
                             }
 
                             await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
-                                if (err) {
-                                    return Response.BadRequest(err, res)
-                                }
+                                if (err) return Response.BadRequest(err, res)
+                                if (!establecimientoDB) return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
+                                if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
 
-                                if (!establecimientoDB) {
-                                    return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
-                                }
-
-                                if (establecimientoDB.estado === false) {
-                                    return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
-                                }
 
                                 Response.GoodRequest(res)
                             })
@@ -321,17 +306,10 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
                         }
 
                         await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
-                            if (err) {
-                                return Response.BadRequest(err, res)
-                            }
+                            if (err) return Response.BadRequest(err, res)
+                            if (!establecimientoDB) return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
+                            if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
 
-                            if (!establecimientoDB) {
-                                return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
-                            }
-
-                            if (establecimientoDB.estado === false) {
-                                return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
-                            }
 
                             Response.GoodRequest(res)
                         })
@@ -377,17 +355,9 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
                                 }
 
                                 await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
-                                    if (err) {
-                                        return Response.BadRequest(err, res)
-                                    }
-
-                                    if (!establecimientoDB) {
-                                        return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
-                                    }
-
-                                    if (establecimientoDB.estado === false) {
-                                        return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
-                                    }
+                                    if (err) return Response.BadRequest(err, res)
+                                    if (!establecimientoDB) return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
+                                    if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
 
                                     Response.GoodRequest(res)
                                 })
@@ -398,17 +368,9 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
 
                 default:
                     await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
-                        if (err) {
-                            return Response.BadRequest(err, res)
-                        }
-
-                        if (!establecimientoDB) {
-                            return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
-                        }
-
-                        if (establecimientoDB.estado === false) {
-                            return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
-                        }
+                        if (err) return Response.BadRequest(err, res)
+                        if (!establecimientoDB) return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
+                        if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
 
                         Response.GoodRequest(res)
                     })
@@ -419,17 +381,9 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
     } else {
         //esto es para que mande el error si no existe el lugar
         await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
-            if (err) {
-                return Response.BadRequest(err, res)
-            }
-
-            if (!establecimientoDB) {
-                return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
-            }
-
-            if (establecimientoDB.estado === false) {
-                return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
-            }
+            if (err) return Response.BadRequest(err, res)
+            if (!establecimientoDB) return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
+            if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
 
             Response.GoodRequest(res)
         })
