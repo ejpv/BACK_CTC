@@ -9,7 +9,7 @@ const _ = require('underscore');
 const app = express();
 
 //crear establecimiento
-app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let body = req.body
     let toDo = 0
     let establecimiento = new Establecimiento({
@@ -26,7 +26,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], (re
         representante: body.representante
     })
     if (establecimiento.lugar) {
-        Lugar.findById(establecimiento.lugar).exec((err, lugarDB) => {
+        await Lugar.findById(establecimiento.lugar).exec(async (err, lugarDB) => {
             if (err) {
                 return Response.BadRequest(err, res)
             }
@@ -44,14 +44,14 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], (re
             // o solo un, y cual de esos
             if (establecimiento.areaProtegida && establecimiento.representante) { toDo = 3 } else {
                 if (establecimiento.areaProtegida) toDo = 2
-                if (establecimiento.representante) toDo = 1 
+                if (establecimiento.representante) toDo = 1
             }
 
             //el switch realiza la acción y comprobaciones de cada una dependiendo de la combinación
 
             switch (toDo) {
                 case 1:
-                    Representante.findById(establecimiento.representante).exec((err, representanteDB) => {
+                    await Representante.findById(establecimiento.representante).exec(async (err, representanteDB) => {
                         if (err) {
                             error = true
                             return Response.BadRequest(err, res)
@@ -64,7 +64,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], (re
                             error = true
                             return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
                         }
-                        Establecimiento.find({ representante: establecimiento.representante }).exec((err, establecimientoDB) => {
+                        await Establecimiento.find({ representante: establecimiento.representante }).exec(async (err, establecimientoDB) => {
                             if (err) {
                                 error = true
                                 return Response.BadRequest(err, res)
@@ -74,7 +74,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], (re
                                 error = true
                                 return Response.BadRequest(err, res, 'El Representante ya está asignado a otro establecimiento')
                             }
-                            establecimiento.save((err, establecimientoDB) => {
+                            await establecimiento.save((err, establecimientoDB) => {
                                 if (err) {
                                     return Response.BadRequest(err, res)
                                 }
@@ -86,7 +86,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], (re
                     break;
 
                 case 2:
-                    AreaProtegida.findById(establecimiento.areaProtegida).exec((err, areaProtegidaDB) => {
+                    await AreaProtegida.findById(establecimiento.areaProtegida).exec(async (err, areaProtegidaDB) => {
                         if (err) {
                             error = true
                             return Response.BadRequest(err, res)
@@ -100,7 +100,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], (re
                             return Response.BadRequest(err, res, 'El Area Protegida está actualmente Borrada')
                         }
 
-                        establecimiento.save((err, establecimientoDB) => {
+                        await establecimiento.save((err, establecimientoDB) => {
                             if (err) {
                                 return Response.BadRequest(err, res)
                             }
@@ -111,7 +111,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], (re
                     break;
 
                 case 3:
-                    AreaProtegida.findById(establecimiento.areaProtegida).exec((err, areaProtegidaDB) => {
+                    await AreaProtegida.findById(establecimiento.areaProtegida).exec(async (err, areaProtegidaDB) => {
                         if (err) {
                             error = true
                             return Response.BadRequest(err, res)
@@ -124,7 +124,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], (re
                             error = true
                             return Response.BadRequest(err, res, 'El Area Protegida está actualmente Borrada')
                         }
-                        Representante.findById(establecimiento.representante).exec((err, representanteDB) => {
+                        await Representante.findById(establecimiento.representante).exec(async (err, representanteDB) => {
                             if (err) {
                                 error = true
                                 return Response.BadRequest(err, res)
@@ -137,7 +137,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], (re
                                 error = true
                                 return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
                             }
-                            Establecimiento.find({ representante: establecimiento.representante }).exec((err, establecimientoDB) => {
+                            await Establecimiento.find({ representante: establecimiento.representante }).exec(async (err, establecimientoDB) => {
                                 if (err) {
                                     error = true
                                     return Response.BadRequest(err, res)
@@ -148,7 +148,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], (re
                                     return Response.BadRequest(err, res, 'El Representante ya está asignado a otro establecimiento')
                                 }
 
-                                establecimiento.save((err, establecimientoDB) => {
+                                await establecimiento.save((err, establecimientoDB) => {
                                     if (err) {
                                         return Response.BadRequest(err, res)
                                     }
@@ -161,7 +161,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], (re
                     break;
 
                 default:
-                    establecimiento.save((err, establecimientoDB) => {
+                    await establecimiento.save((err, establecimientoDB) => {
                         if (err) {
                             return Response.BadRequest(err, res)
                         }
@@ -174,7 +174,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], (re
         })
     } else {
         //esto es para que mande el error si no existe el lugar
-        establecimiento.save((err, establecimientoDB) => {
+        await establecimiento.save((err, establecimientoDB) => {
             if (err) {
                 return Response.BadRequest(err, res)
             }
@@ -183,20 +183,20 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], (re
 })
 
 //obtener todos los establecimientos
-app.get('/api/establecimientos', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.get('/api/establecimientos', [verificarToken, verificarNotRepresentant], async (req, res) => {
     // el estado por defecto es true, solo acepta estado falso por la url
     const estado = req.query.estado === 'false' ? false : true
 
-    Establecimiento.find({ estado })
+    await Establecimiento.find({ estado })
         .populate({ path: 'lugar', model: 'lugar' })
         .populate({ path: 'areaProtegida', model: 'areaProtegida' })
         .populate({ path: 'representante', model: 'representante' })
-        .exec((err, establecimientos) => {
+        .exec(async (err, establecimientos) => {
             if (err) {
                 return Response.BadRequest(err, res)
             }
 
-            Establecimiento.countDocuments({ estado }, (err, conteo) => {
+            await Establecimiento.countDocuments({ estado }, (err, conteo) => {
                 if (err) {
                     return Response.BadRequest(err, res)
                 }
@@ -206,10 +206,10 @@ app.get('/api/establecimientos', [verificarToken, verificarNotRepresentant], (re
 })
 
 //obtener un establecimiento por id
-app.get('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.get('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
 
-    Establecimiento.findByIdAndUpdate(id)
+    await Establecimiento.findByIdAndUpdate(id)
         .populate({ path: 'lugar', model: 'lugar' })
         .populate({ path: 'areaProtegida', model: 'areaProtegida' })
         .populate({ path: 'representante', model: 'representante' })
@@ -231,13 +231,13 @@ app.get('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
 })
 
 //editar un establecimiento por id
-app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
-    let body = _.pick(req.body, ['nombrePropietario', 'administrador', 'lugar', 'registro', 'LUAF', 'email', 'nacionalidad', 'web', 'telefono', 'areaProtegida', 'representante'])
+    let body = _.pickasync(req.body, ['nombrePropietario', 'administrador', 'lugar', 'registro', 'LUAF', 'email', 'nacionalidad', 'web', 'telefono', 'areaProtegida', 'representante'])
     let toDo = 0
 
     if (body.lugar) {
-        Lugar.findById(body.lugar).exec((err, lugarDB) => {
+        await Lugar.findById(body.lugar).exec(async (err, lugarDB) => {
             if (err) {
                 return Response.BadRequest(err, res)
             }
@@ -262,7 +262,7 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
 
             switch (toDo) {
                 case 1:
-                    Representante.findById(body.representante).exec((err, representanteDB) => {
+                    await Representante.findById(body.representante).exec(async (err, representanteDB) => {
                         if (err) {
                             error = true
                             return Response.BadRequest(err, res)
@@ -275,7 +275,7 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
                             error = true
                             return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
                         }
-                        Establecimiento.find({ representante: body.representante }).exec((err, establecimientoDB) => {
+                        await Establecimiento.find({ representante: body.representante }).exec(async (err, establecimientoDB) => {
                             if (err) {
                                 error = true
                                 return Response.BadRequest(err, res)
@@ -286,7 +286,7 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
                                 return Response.BadRequest(err, res, 'El Representante ya está asignado a otro establecimiento')
                             }
 
-                            Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
+                            await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
                                 if (err) {
                                     return Response.BadRequest(err, res)
                                 }
@@ -306,7 +306,7 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
                     break;
 
                 case 2:
-                    AreaProtegida.findById(body.areaProtegida).exec((err, areaProtegidaDB) => {
+                    await AreaProtegida.findById(body.areaProtegida).exec(async (err, areaProtegidaDB) => {
                         if (err) {
                             error = true
                             return Response.BadRequest(err, res)
@@ -320,7 +320,7 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
                             return Response.BadRequest(err, res, 'El Area Protegida está actualmente Borrada')
                         }
 
-                        Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
+                        await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
                             if (err) {
                                 return Response.BadRequest(err, res)
                             }
@@ -339,7 +339,7 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
                     break;
 
                 case 3:
-                    AreaProtegida.findById(body.areaProtegida).exec((err, areaProtegidaDB) => {
+                    await AreaProtegida.findById(body.areaProtegida).exec(async (err, areaProtegidaDB) => {
                         if (err) {
                             error = true
                             return Response.BadRequest(err, res)
@@ -352,7 +352,7 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
                             error = true
                             return Response.BadRequest(err, res, 'El Area Protegida está actualmente Borrada')
                         }
-                        Representante.findById(body.representante).exec((err, representanteDB) => {
+                        await Representante.findById(body.representante).exec(async (err, representanteDB) => {
                             if (err) {
                                 error = true
                                 return Response.BadRequest(err, res)
@@ -365,7 +365,7 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
                                 error = true
                                 return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
                             }
-                            Establecimiento.find({ representante: body.representante }).exec((err, establecimientoDB) => {
+                            await Establecimiento.find({ representante: body.representante }).exec(async (err, establecimientoDB) => {
                                 if (err) {
                                     error = true
                                     return Response.BadRequest(err, res)
@@ -376,7 +376,7 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
                                     return Response.BadRequest(err, res, 'El Representante ya está asignado a otro establecimiento')
                                 }
 
-                                Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
+                                await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
                                     if (err) {
                                         return Response.BadRequest(err, res)
                                     }
@@ -397,7 +397,7 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
                     break;
 
                 default:
-                    Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
+                    await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
                         if (err) {
                             return Response.BadRequest(err, res)
                         }
@@ -418,7 +418,7 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
         })
     } else {
         //esto es para que mande el error si no existe el lugar
-        Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
+        await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
             if (err) {
                 return Response.BadRequest(err, res)
             }
@@ -437,14 +437,14 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
 })
 
 //eliminar un establecimiento por id
-app.delete('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.delete('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
 
     let cambiarEstado = {
         estado: false
     }
 
-    Establecimiento.findByIdAndUpdate(id, cambiarEstado, (err, establecimientoDB) => {
+    await Establecimiento.findByIdAndUpdate(id, cambiarEstado, (err, establecimientoDB) => {
         if (err) {
             return Response.BadRequest(err, res)
         }
@@ -462,14 +462,14 @@ app.delete('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant
 })
 
 //restaurar un establecimiento
-app.put('/api/establecimiento/:id/restaurar', [verificarToken, verificarNotRepresentant], (req, res) => { 
+app.put('/api/establecimiento/:id/restaurar', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
 
     let cambiarEstado = {
         estado: true
     }
 
-    Establecimiento.findByIdAndUpdate(id, cambiarEstado, (err, establecimientoDB) => {
+    await Establecimiento.findByIdAndUpdate(id, cambiarEstado, (err, establecimientoDB) => {
         if (err) {
             return Response.BadRequest(err, res)
         }

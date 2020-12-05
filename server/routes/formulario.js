@@ -161,14 +161,14 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], async
 })
 
 //eliminar un formulario por id
-app.delete('/api/formulario/:id', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.delete('/api/formulario/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
 
     let cambiarEstado = {
         estado: false
     }
 
-    Formulario.findByIdAndUpdate(id, cambiarEstado, (err, formularioBorrado) => {
+    await Formulario.findByIdAndUpdate(id, cambiarEstado, (err, formularioBorrado) => {
         if (err) {
             return Response.BadRequest(err, res)
         }
@@ -186,14 +186,14 @@ app.delete('/api/formulario/:id', [verificarToken, verificarNotRepresentant], (r
 })
 
 //restaurar un formulario
-app.put('/api/formulario/:id/restaurar', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.put('/api/formulario/:id/restaurar', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
 
     let cambiarEstado = {
         estado: true
     }
 
-    Formulario.findByIdAndUpdate(id, cambiarEstado, (err, formularioRestaurado) => {
+    await Formulario.findByIdAndUpdate(id, cambiarEstado, (err, formularioRestaurado) => {
         if (err) {
             return Response.BadRequest(err, res)
         }

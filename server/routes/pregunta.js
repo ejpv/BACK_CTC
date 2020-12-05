@@ -10,7 +10,7 @@ const _ = require('underscore')
 const app = express()
 
 //crear una pregunta con 3 tipos de preguntas permitidas
-app.post('/api/pregunta', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.post('/api/pregunta', [verificarToken, verificarNotRepresentant], async (req, res) => {
   let body = req.body
 
   let pregunta = new Pregunta({
@@ -29,66 +29,51 @@ app.post('/api/pregunta', [verificarToken, verificarNotRepresentant], (req, res)
     pregunta.opciones = undefined
   }
 
-  pregunta.save((err, preguntaDB) => {
-    if (err) {
-      return Response.BadRequest(err, res)
-    }
+  await pregunta.save((err, preguntaDB) => {
+    if (err) return Response.BadRequest(err, res)
 
     Response.BadRequest(res, preguntaDB)
   })
 })
 
 //obtener todas las preguntas enviando el estado: true o false
-app.get('/api/preguntas', verificarToken, (req, res) => {
+app.get('/api/preguntas', verificarToken, async (req, res) => {
   // el estado por defecto es true, solo acepta estado falso por la url
   const estado = req.query.estado === 'false' ? false : true
 
-  Pregunta.find({ estado }).exec((err, preguntas) => {
-    if (err) {
-      return Response.BadRequest(err, res)
-    }
+  await Pregunta.find({ estado }).exec(async (err, preguntas) => {
+    if (err) return Response.BadRequest(err, res)
 
-    Pregunta.countDocuments({ estado }, (err, conteo) => {
-      if (err) {
-        return Response.BadRequest(err, res)
-      }
-
+    await Pregunta.countDocuments({ estado }, (err, conteo) => {
+      if (err) return Response.BadRequest(err, res)
       Response.GoodRequest(res, preguntas, conteo)
+
     })
   })
 })
 
 //edita la información de una pregunta por id
-app.put('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.put('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
   let id = req.params.id
-  let body = _.pick(req.body, ['tipo', 'enunciado', 'opciones'])
+  let body = _.pickasync(req.body, ['tipo', 'enunciado', 'opciones'])
 
   if (body.tipo == 'SELECCION' || body.tipo == 'MULTIPLE') {
-    if (body.opciones == undefined) {
-      return Response.BadRequest(err, res, 'Las Opciones de la preguntas, son necesarias')
-    }
+    if (body.opciones == undefined) return Response.BadRequest(err, res, 'Las Opciones de la preguntas, son necesarias')
+
     //esto da true cuando opciones no es un array para postman necesita mas de un valor para ser array
-    if (body.opciones.includes("")) {
-      return Response.BadRequest(err, res, 'No se aceptan opciones vacias o una sola opción')
-    }
+    if (body.opciones.includes("")) return Response.BadRequest(err, res, 'No se aceptan opciones vacias o una sola opción')
+
   } else {
+
     //Si es SN no importa si vienen opciones, las vacia antes de editar
     body.opciones = []
   }
 
-  Pregunta.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' },
+  await Pregunta.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' },
     (err, preguntaDB) => {
-      if (err) {
-        return Response.BadRequest(err, res)
-      }
-
-      if (!preguntaDB) {
-        return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
-      }
-
-      if (preguntaDB.estado === false) {
-        return Response.BadRequest(err, res, 'La pregunta está actualmente borrada.')
-      }
+      if (err) return Response.BadRequest(err, res)
+      if (!preguntaDB) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
+      if (!preguntaDB.estado) return Response.BadRequest(err, res, 'La pregunta está actualmente borrada.')
 
       Response.GoodRequest(res)
     }
@@ -96,46 +81,30 @@ app.put('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], (req, r
 })
 
 //eliminar una pregunta, cambiar el estado a false
-app.delete('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.delete('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
   let id = req.params.id
 
   let cambiarEstado = {
     estado: false
   }
 
-  Formulario.find({ pregunta: id }).exec((err, formularioDB) => {
+  await Formulario.find({ pregunta: id }).exec(async (err, formularioDB) => {
 
-    if (err) {
-      return Response.BadRequest(err, res)
-    }
+    if (err) return Response.BadRequest(err, res)
 
     if (formularioDB[0] != undefined) {
-      Pregunta.findByIdAndUpdate(id, cambiarEstado, (err, preguntaEliminada) => {
-        if (err) {
-          return Response.BadRequest(err, res)
-        }
-
-        if (!preguntaEliminada) {
-          return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
-        }
-
-        if (preguntaEliminada.estado === false) {
-          return Response.BadRequest(err, res, 'La pregunta está actualmente borrada.')
-        }
+      await Pregunta.findByIdAndUpdate(id, cambiarEstado, (err, preguntaEliminada) => {
+        if (err) return Response.BadRequest(err, res)
+        if (!preguntaEliminada) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
+        if (!preguntaEliminada.estado) return Response.BadRequest(err, res, 'La pregunta está actualmente borrada.')
 
         Response.GoodRequest(res)
       })
 
     } else {
-      Pregunta.findByIdAndRemove(id, (err, preguntaDB) => {
-
-        if (err) {
-          return Response.BadRequest(err, res)
-        }
-
-        if (!preguntaDB) {
-          return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
-        }
+      await Pregunta.findByIdAndRemove(id, (err, preguntaDB) => {
+        if (err) return Response.BadRequest(err, res)
+        if (!preguntaDB) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
 
         Response.GoodRequest(res)
       });
@@ -146,25 +115,17 @@ app.delete('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], (req
 })
 
 //restaurar una pregunta cambiada a false
-app.put('/api/pregunta/:id/restaurar', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.put('/api/pregunta/:id/restaurar', [verificarToken, verificarNotRepresentant], async (req, res) => {
   let id = req.params.id
 
   let cambiarEstado = {
     estado: true
   }
 
-  Pregunta.findByIdAndUpdate(id, cambiarEstado, (err, preguntaRestaurada) => {
-    if (err) {
-      return Response.BadRequest(err, res)
-    }
-
-    if (!preguntaRestaurada) {
-      return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
-    }
-
-    if (preguntaRestaurada.estado === true) {
-      return Response.BadRequest(err, res, 'La pregunta actualmente no está borrada.')
-    }
+  await Pregunta.findByIdAndUpdate(id, cambiarEstado, (err, preguntaRestaurada) => {
+    if (err) return Response.BadRequest(err, res)
+    if (!preguntaRestaurada) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
+    if (!preguntaRestaurada.estado) return Response.BadRequest(err, res, 'La pregunta actualmente no está borrada.')
 
     Response.GoodRequest(res)
   })

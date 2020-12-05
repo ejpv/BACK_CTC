@@ -6,7 +6,7 @@ const Usuario = require('../models/usuario')
 const app = express()
 
 // logeo de un usuario
-app.post('/api/login', function (req, res) {
+app.post('/api/login', async (req, res) => {
   const body = req.body
 
   //Email y contraseña requridos.
@@ -14,7 +14,7 @@ app.post('/api/login', function (req, res) {
     return Response.BadRequest(err, res, 'Email y contraseña Requeridos')
   }
 
-  Usuario.findOne({ email: body.email }, (err, usuarioDb) => {
+  await Usuario.findOne({ email: body.email }, (err, usuarioDb) => {
     if (err) {
       return Response.BadRequest(err, res)
     }

@@ -6,7 +6,7 @@ const _ = require('underscore')
 const app = express()
 
 //generar un AreaProtegida
-app.post('/api/areaProtegida', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.post('/api/areaProtegida', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let body = req.body
 
     let areaProtegida = new AreaProtegida({
@@ -14,7 +14,7 @@ app.post('/api/areaProtegida', [verificarToken, verificarNotRepresentant], (req,
         nombre: body.nombre
     })
 
-    areaProtegida.save((err, areaProtegidaDB) => {
+    await areaProtegida.save((err, areaProtegidaDB) => {
         if (err) {
             return Response.BadRequest(err, res)
         }
@@ -24,16 +24,16 @@ app.post('/api/areaProtegida', [verificarToken, verificarNotRepresentant], (req,
 })
 
 //Ver todos los areaProtegidaes
-app.get('/api/areasProtegidas', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.get('/api/areasProtegidas', [verificarToken, verificarNotRepresentant], async (req, res) => {
     // el estado por defecto es true, solo acepta estado falso por la url
     const estado = req.query.estado === 'false' ? false : true
 
-    AreaProtegida.find({ estado }).exec((err, areasProtegidas) => {
+    await AreaProtegida.find({ estado }).exec( async (err, areasProtegidas) => {
         if (err) {
             return Response.BadRequest(err, res)
         }
 
-        AreaProtegida.countDocuments({ estado }, (err, conteo) => {
+        await AreaProtegida.countDocuments({ estado }, (err, conteo) => {
             if (err) {
                 return Response.BadRequest(err, res)
             }
@@ -43,11 +43,11 @@ app.get('/api/areasProtegidas', [verificarToken, verificarNotRepresentant], (req
 })
 
 //Editar un areaProtegida por id
-app.put('/api/areaProtegida/:id', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.put('/api/areaProtegida/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
     let body = _.pick(req.body, ['tipo', 'nombre'])
 
-    AreaProtegida.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' },
+    await AreaProtegida.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' },
         (err, areaProtegidaDB) => {
             if (err) {
                 return Response.BadRequest(err, res)
@@ -66,14 +66,14 @@ app.put('/api/areaProtegida/:id', [verificarToken, verificarNotRepresentant], (r
 })
 
 //Eliminar un areaProtegida por id
-app.delete('/api/areaProtegida/:id', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.delete('/api/areaProtegida/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
 
     let cambiarEstado = {
         estado: false
     }
 
-    AreaProtegida.findByIdAndUpdate(id, cambiarEstado, (err, areaProtegidaDB) => {
+    await AreaProtegida.findByIdAndUpdate(id, cambiarEstado, (err, areaProtegidaDB) => {
             if (err) {
                 return Response.BadRequest(err, res)
             }
@@ -91,7 +91,7 @@ app.delete('/api/areaProtegida/:id', [verificarToken, verificarNotRepresentant],
 })
 
 //Restaurar un areaProtegida por id
-app.put('/api/areaProtegida/:id/restaurar', [verificarToken, verificarNotRepresentant], (req, res) => {
+app.put('/api/areaProtegida/:id/restaurar', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
 
     let cambiarEstado = {
