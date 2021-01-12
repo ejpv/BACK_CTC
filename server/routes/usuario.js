@@ -2,9 +2,10 @@ const express = require('express')
 const Response = require('../utils/response')
 const bcrypt = require('bcrypt')
 const Usuario = require('../models/usuario')
-const { verificarToken, verificarAdmin_Rol } = require('../middlewares/autentication')
+const { verificarToken, verificarAdmin_Rol, verificarNotRepresentant } = require('../middlewares/autentication')
 const _ = require('underscore')
 const app = express()
+const jwt = require('jsonwebtoken')
 
 //obtener todos los usuarios enviandoles el estado
 app.get('/api/usuarios', verificarToken, async (req, res) => {
@@ -35,10 +36,6 @@ app.post('/api/usuario', [verificarToken, verificarAdmin_Rol], async (req, res) 
     rol: body.rol
   })
 
-  if (!(body.password === undefined)) {
-    usuario.password = bcrypt.hashSync(body.password, 10)
-  }
-
   await usuario.save((err, usuarioDB) => {
     if (err) return Response.BadRequest(err, res)
     return Response.GoodRequest(res, usuarioDB)
@@ -50,19 +47,16 @@ app.put('/api/usuario/:id', [verificarToken, verificarAdmin_Rol], async (req, re
   let id = req.params.id
 
   //_.pick es filtrar y solo elegir esas del body
-  let body = _.pickasync(req.body, ['nombre', 'apellido', 'rol', 'email'])
-
-  await Usuario.findByIdAndUpdate(
-    id,
-    body,
-    { new: true, runValidators: true, context: 'query' },
-    (err, usuarioDB) => {
+  let body = _.pick(req.body, ['nombre', 'apellido', 'rol', 'email'])
+  await Usuario.findById(id, async (err, usuarioDB) => {
+    if (err) return Response.BadRequest(err, res)
+    if (!usuarioDB) return Response.BadRequest(err, res, 'No se encontró al usuario, id inválido')
+    if (!usuarioDB.estado) return Response.BadRequest(err, res, 'El usuario está actualmente Borrado')
+    await Usuario.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
       if (err) return Response.BadRequest(err, res)
-      if (!usuarioDB) return Response.BadRequest(err, res, 'No se encontró al usuario, id inválido')
-      if (!usuarioDB.estado) return Response.BadRequest(err, res, 'El usuario está actualmente Borrado')
       Response.GoodRequest(res)
-    }
-  )
+    })
+  })
 })
 
 //eliminar un usuario
@@ -72,12 +66,14 @@ app.delete('/api/usuario/:id', [verificarToken, verificarAdmin_Rol], async (req,
   let cambiarEstado = {
     estado: false
   }
-
-  await Usuario.findByIdAndUpdate(id, cambiarEstado, (err, usuarioBorrado) => {
+  await Usuario.findById(id, async (err, usuarioBorrado) => {
     if (err) return Response.BadRequest(err, res)
     if (!usuarioBorrado) return Response.BadRequest(err, res, 'El usuario no existe')
     if (!usuarioBorrado.estado) return Response.BadRequest(err, res, 'El usuario está actualmente borrado.')
-    Response.GoodRequest(res)
+    await Usuario.findByIdAndUpdate(id, cambiarEstado, (err) => {
+      if (err) return Response.BadRequest(err, res)
+      Response.GoodRequest(res)
+    })
   })
 })
 
@@ -88,46 +84,85 @@ app.put('/api/usuario/:id/restaurar', [verificarToken, verificarAdmin_Rol], asyn
   let cambiarEstado = {
     estado: true
   }
-
-  await Usuario.findByIdAndUpdate(id, cambiarEstado, { new: true }, (err, usuarioRestaurado) => {
+  await Usuario.findById(id, async (err, usuarioRestaurado) => {
     if (err) return Response.BadRequest(err, res)
     if (!usuarioRestaurado) return Response.BadRequest(err, res, 'El usuario no existe')
     if (usuarioRestaurado.estado) return Response.BadRequest(err, res, 'El usuario no está borrado.')
-    
-    Response.GoodRequest(res)
+    await Usuario.findByIdAndUpdate(id, cambiarEstado, (err) => {
+      if (err) return Response.BadRequest(err, res)
+      Response.GoodRequest(res)
+    })
   })
 })
 
 //activar un usuario
-/*app.put('/api/usuario/:id/activar', async (req, res) => {
-  let id = req.params.id
-
-  let cambiarActivo = {
-    activado: true
+app.post('/api/usuario/activar', verificarToken, async (req, res) => {
+  const token = req.headers.token
+  const { password } = req.body
+  let id = req.usuario._id
+  let activarUsuario = {
+    activado: true,
+    password: bcrypt.hashSync(password, 10),
+    verificacionToken: null
   }
 
-  Usuario.findByIdAndUpdate(id, cambiarActivo, { new: true }, (err, usuarioActivado) => {
-    if (err) {
-      return res.status(400).json({
-        ok: false,
-        err
+  await Usuario.findById(id).exec(async (err, usuarioDB) => {
+    if (!usuarioDB) return Response.BadRequest(err, res, 'El usuario no existe')
+    if (!usuarioDB.estado) return Response.BadRequest(err, res, 'El usuario está actualmente borrado')
+    if (token == usuarioDB.verificacionToken) {
+      await Usuario.findByIdAndUpdate(id, activarUsuario, (err) => {
+        if (err) return Response.BadRequest(err, res)
+        Response.GoodRequest(res)
       })
+    } else {
+      return Response.BadRequest(null, res, 'El token no es el correcto')
     }
+  })
+})
 
-    if (!usuarioActivado) {
-      return res.status(400).json({
-        ok: false,
-        err: {
-          message: 'El usuario no existe.'
-        }
+//reestablecer contraseña
+app.post('/api/usuario/password', verificarToken, async (req, res) => {
+  const token = req.headers.token;
+  const { password } = req.body
+  let cambiarPass = {
+    password: bcrypt.hashSync(password, 10),
+    verificacionToken: null
+  }
+  let id = req.usuario._id
+
+  await Usuario.findById(id).exec(async (err, usuarioDB) => {
+    if (!usuarioDB) return Response.BadRequest(err, res, 'El usuario no existe')
+    if (!usuarioDB.estado) return Response.BadRequest(err, res, 'El usuario está actualmente borrado')
+    if (token == usuarioDB.verificacionToken) {
+      await Usuario.findByIdAndUpdate(id, cambiarPass, (err) => {
+        if (err) return Response.BadRequest(err, res)
+        Response.GoodRequest(res)
       })
+    } else {
+      return Response.BadRequest(null, res, 'El token no es el correcto')
     }
+  })
+})
 
-    res.json({
-      ok: true,
-      usuario: usuarioActivado
+//Cambiar la contraseña con el usuario dentro de la app
+app.put('/api/usuario/changePass', verificarToken, async (req, res) => {
+  const { password } = req.body
+  let id = req.usuario._id
+  let newPass = {
+    password: bcrypt.hashSync(password, 10),
+  }
+
+  await Usuario.findById(id).exec(async (err, usuarioDB) => {
+    if (err) return Response.BadRequest(err, res)
+    if (!usuarioDB) return Response.BadRequest(err, res, 'El usuario no existe')
+    if (!usuarioDB.estado) return Response.BadRequest(err, res, 'El usuario está actualmente borrado')
+    await Usuario.findByIdAndUpdate(id, newPass, (err) => {
+      if (err) return Response.BadRequest(err, res)
+      Response.GoodRequest(res)
     })
   })
-})*/
+})
 
 module.exports = app
+
+

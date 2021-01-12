@@ -44,15 +44,17 @@ app.get('/api/lugares', [verificarToken, verificarNotRepresentant], async (req, 
 //Editar un lugar por id
 app.put('/api/lugar/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
-    let body = _.pickasync(req.body, ['canton', 'provincia', 'parroquia', 'lat', 'lon', 'ciudad'])
+    let body = _.pick(req.body, ['canton', 'provincia', 'parroquia', 'lat', 'lon', 'ciudad'])
 
-    await Lugar.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' },
-        (err, lugarDB) => {
+    await Lugar.findById(id, async (err, lugarDB) => {
+        if (err) return Response.BadRequest(err, res)
+        if (!lugarDB) return Response.BadRequest(err, res, 'No existe ese lugar, id inválido')
+        if (!lugarDB.estado) return Response.BadRequest(err, res, 'El lugar está actualmente borrado.')
+        await Lugar.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
             if (err) return Response.BadRequest(err, res)
-            if (!lugarDB) return Response.BadRequest(err, res, 'No existe ese lugar, id inválido')
-            if (!lugarDB.estado) return Response.BadRequest(err, res, 'El lugar está actualmente borrado.')
             return Response.GoodRequest(res)
         })
+    })
 })
 
 //Eliminar un lugar por id
@@ -65,14 +67,16 @@ app.delete('/api/lugar/:id', [verificarToken, verificarNotRepresentant], async (
     await Establecimiento.findOne({ lugar: id }, async (err, establecimientoDB) => {
         if (err) return Response.BadRequest(err, res)
         if (establecimientoDB) {
-
-            await Lugar.findByIdAndUpdate(id, cambiarEstado, (err, lugarDB) => {
+            await Lugar.findById(id, async (err, lugarDB) => {
                 if (err) return Response.BadRequest(err, res)
                 if (!lugarDB) return Response.BadRequest(err, res, 'No existe ese lugar, id inválido')
                 if (!lugarDB.estado) return Response.BadRequest(err, res, 'El lugar está actualmente borrado.')
-
-                Response.GoodRequest(res)
+                await Lugar.findByIdAndUpdate(id, cambiarEstado, (err) => {
+                    if (err) return Response.BadRequest(err, res)
+                    Response.GoodRequest(res)
+                })
             })
+
 
         } else {
             await Lugar.findByIdAndRemove(id, (err, lugarDB) => {
@@ -94,13 +98,14 @@ app.put('/api/lugar/:id/restaurar', [verificarToken, verificarNotRepresentant], 
     let cambiarEstado = {
         estado: true
     }
-
-    await Lugar.findByIdAndUpdate(id, cambiarEstado, (err, lugarDB) => {
+    await Lugar.findById(id, async (err, lugarDB) => {
         if (err) return Response.BadRequest(err, res)
         if (!lugarDB) return Response.BadRequest(err, res, 'No existe ese lugar, id inválido')
         if (lugarDB.estado) return Response.BadRequest(err, res, 'El lugar actualmente no está borrado.')
-
-        Response.GoodRequest(res)
+        await Lugar.findByIdAndUpdate(id, cambiarEstado, (err) => {
+            if (err) return Response.BadRequest(err, res)
+            Response.GoodRequest(res)
+        })
     })
 })
 

@@ -32,12 +32,15 @@ app.post('/api/login', async (req, res) => {
       process.env.SEED_TOKEN,
       { expiresIn: process.env.CADUCIDAD_TOKEN }
     )
+    
+    let exp = jwt.decode(token).exp
 
     //respuesta
     res.json({
       ok: true,
       usuario: usuarioDb,
-      token
+      token,
+      expireAt: exp
     })
   })
 })

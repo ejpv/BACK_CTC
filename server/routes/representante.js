@@ -20,7 +20,7 @@ app.post('/api/representante', [verificarToken, verificarNotRepresentant], async
     })
 
     //Buscar el usuario que se está enviando, y verificar que sea de rol de Técnico
-    if (body.usuario) {
+    if (body.ea4x) {
 
         representante.usuario = body.usuario
 
@@ -75,7 +75,7 @@ app.get('/api/representantes', [verificarToken, verificarNotRepresentant], async
 //Editar un representante por id
 app.put('/api/representante/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
-    let body = _.pickasync(req.body, ['nombre', 'apellido', 'email', 'cedula', 'direccion', 'telefono', 'usuario'])
+    let body = _.pick(req.body, ['nombre', 'apellido', 'email', 'cedula', 'direccion', 'telefono', 'usuario'])
 
     if (body.usuario) {
         await Usuario.findById({ _id: body.usuario }).exec(async (err, usuarioDB) => {
@@ -92,25 +92,26 @@ app.put('/api/representante/:id', [verificarToken, verificarNotRepresentant], as
             } else {
                 return Response.BadRequest(err, res, 'El Usuario no existe, id inválido')
             }
-
-            await Representante.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' },
-                (err, representanteDB) => {
-                    if (err) return Response.BadRequest(err, res)
-                    if (!representanteDB) return Response.BadRequest(err, res, 'El Representante no existe, id inválido')
-                    if (!representanteDB.estado) return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
-
-                    Response.GoodRequest(res)
-                })
-        })
-    } else {
-        await Representante.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' },
-            (err, representanteDB) => {
+            await Representante.findById(id, async (err, representanteDB) => {
                 if (err) return Response.BadRequest(err, res)
                 if (!representanteDB) return Response.BadRequest(err, res, 'El Representante no existe, id inválido')
                 if (!representanteDB.estado) return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
-
+                await Representante.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
+                    if (err) return Response.BadRequest(err, res)
+                    Response.GoodRequest(res)
+                })
+            })
+        })
+    } else {
+        await Representante.findById(id, async (err, representanteDB) => {
+            if (err) return Response.BadRequest(err, res)
+            if (!representanteDB) return Response.BadRequest(err, res, 'El Representante no existe, id inválido')
+            if (!representanteDB.estado) return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
+            await Representante.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
+                if (err) return Response.BadRequest(err, res)
                 Response.GoodRequest(res)
             })
+        })
     }
 
 })
@@ -123,12 +124,14 @@ app.delete('/api/representante/:id', [verificarToken, verificarNotRepresentant],
         estado: false
     }
 
-    await Representante.findByIdAndUpdate(id, cambiarEstado, (err, representanteDB) => {
+    await Representante.findById(id, async (err, representanteDB) => {
         if (err) return Response.BadRequest(err, res)
         if (!representanteDB) return Response.BadRequest(err, res, 'El Representante no existe, id inválido')
         if (!representanteDB.estado) return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
-
-        Response.GoodRequest(res)
+        await Representante.findByIdAndUpdate(id, cambiarEstado, (err) => {
+            if (err) return Response.BadRequest(err, res)
+            Response.GoodRequest(res)
+        })
     })
 })
 
@@ -140,13 +143,17 @@ app.put('/api/representante/:id/restaurar', [verificarToken, verificarNotReprese
         estado: true
     }
 
-    await Representante.findByIdAndUpdate(id, cambiarEstado, (err, representanteDB) => {
+    await Representante.findById(id, async (err, representanteDB) => {
         if (err) return Response.BadRequest(err, res)
         if (!representanteDB) return Response.BadRequest(err, res, 'El Representante no existe, id inválido')
-        if (representanteDB.estado) return Response.BadRequest(err, res, 'El Representante no está Borrado')
-
-        Response.GoodRequest(res)
+        if (!representanteDB.estado) return Response.BadRequest(err, res, 'El Representante no está Borrado')
+        await Representante.findByIdAndUpdate(id, cambiarEstado, (err) => {
+            if (err) return Response.BadRequest(err, res)
+            Response.GoodRequest(res)
+        })
     })
 })
 
+
+//creo que falta cuando el representante quiera cambiar su propia información, preguntar si debería poder
 module.exports = app

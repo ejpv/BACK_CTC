@@ -20,7 +20,7 @@ app.post('/api/pregunta', [verificarToken, verificarNotRepresentant], async (req
   })
 
   if (pregunta.tipo == 'SELECCION' || pregunta.tipo == 'MULTIPLE') {
-    if (body.opciones != undefined) {
+    if (body.opciones) {
       pregunta.opciones = body.opciones
     } else {
       return Response.BadRequest(err, res, 'Las Opciones de la preguntas, son necesarias')
@@ -32,7 +32,7 @@ app.post('/api/pregunta', [verificarToken, verificarNotRepresentant], async (req
   await pregunta.save((err, preguntaDB) => {
     if (err) return Response.BadRequest(err, res)
 
-    Response.BadRequest(res, preguntaDB)
+    return Response.GoodRequest(res, preguntaDB)
   })
 })
 
@@ -55,7 +55,7 @@ app.get('/api/preguntas', verificarToken, async (req, res) => {
 //edita la información de una pregunta por id
 app.put('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
   let id = req.params.id
-  let body = _.pickasync(req.body, ['tipo', 'enunciado', 'opciones'])
+  let body = _.pick(req.body, ['tipo', 'enunciado', 'opciones'])
 
   if (body.tipo == 'SELECCION' || body.tipo == 'MULTIPLE') {
     if (body.opciones == undefined) return Response.BadRequest(err, res, 'Las Opciones de la preguntas, son necesarias')
@@ -68,16 +68,16 @@ app.put('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], async (
     //Si es SN no importa si vienen opciones, las vacia antes de editar
     body.opciones = []
   }
-
-  await Pregunta.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' },
-    (err, preguntaDB) => {
-      if (err) return Response.BadRequest(err, res)
-      if (!preguntaDB) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
-      if (!preguntaDB.estado) return Response.BadRequest(err, res, 'La pregunta está actualmente borrada.')
-
-      Response.GoodRequest(res)
-    }
-  )
+  await Pregunta.findById(id, async (err, preguntaDB) => {
+    if (err) return Response.BadRequest(err, res)
+    if (!preguntaDB) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
+    if (!preguntaDB.estado) return Response.BadRequest(err, res, 'La pregunta está actualmente borrada.')
+    await Pregunta.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' },
+      (err) => {
+        if (err) return Response.BadRequest(err, res)
+        Response.GoodRequest(res)
+      })
+  })
 })
 
 //eliminar una pregunta, cambiar el estado a false
@@ -93,14 +93,17 @@ app.delete('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], asyn
     if (err) return Response.BadRequest(err, res)
 
     if (formularioDB[0] != undefined) {
-      await Pregunta.findByIdAndUpdate(id, cambiarEstado, (err, preguntaEliminada) => {
+
+      await Pregunta.findById(id, async (err, preguntaDB) => {
         if (err) return Response.BadRequest(err, res)
-        if (!preguntaEliminada) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
-        if (!preguntaEliminada.estado) return Response.BadRequest(err, res, 'La pregunta está actualmente borrada.')
-
-        Response.GoodRequest(res)
+        if (!preguntaDB) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
+        if (!preguntaDB.estado) return Response.BadRequest(err, res, 'La pregunta está actualmente borrada.')
+        await Pregunta.findByIdAndUpdate(id, cambiarEstado, (err) => {
+            if (err) return Response.BadRequest(err, res)
+            Response.GoodRequest(res)
+          })
       })
-
+      
     } else {
       await Pregunta.findByIdAndRemove(id, (err, preguntaDB) => {
         if (err) return Response.BadRequest(err, res)
@@ -122,12 +125,14 @@ app.put('/api/pregunta/:id/restaurar', [verificarToken, verificarNotRepresentant
     estado: true
   }
 
-  await Pregunta.findByIdAndUpdate(id, cambiarEstado, (err, preguntaRestaurada) => {
+  await Pregunta.findById(id, async (err, preguntaDB) => {
     if (err) return Response.BadRequest(err, res)
-    if (!preguntaRestaurada) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
-    if (preguntaRestaurada.estado) return Response.BadRequest(err, res, 'La pregunta actualmente no está borrada.')
-
-    Response.GoodRequest(res)
+    if (!preguntaDB) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
+    if (!preguntaDB.estado) return Response.BadRequest(err, res, 'La pregunta actualmente no está borrada.')
+    await Pregunta.findByIdAndUpdate(id, cambiarEstado, (err) => {
+        if (err) return Response.BadRequest(err, res)
+        Response.GoodRequest(res)
+      })
   })
 })
 

@@ -12,7 +12,7 @@ let usuarioSchema = new Schema({
   nombre: { type: String, required: [true, 'El nombre es necesario'] },
   apellido: { type: String, required: [true, 'El apellido es necesario'] },
   email: { type: String, unique: true, required: [true, 'El correo es necesario'] },
-  password: { type: String, required: [true, 'La contraseña es obligatoria'] },
+  password: { type: String, required: false },
   avatar: { type: String },
   rol: {
     type: String,
@@ -21,7 +21,8 @@ let usuarioSchema = new Schema({
     enum: rolesValidos
   },
   estado: { type: Boolean, default: true },
-  activado: { type: Boolean, default: false }
+  activado: { type: Boolean, default: false },
+  verificacionToken:{ type: String, required: false}
 })
 
 usuarioSchema.methods.toJSON = function () {

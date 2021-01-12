@@ -1,7 +1,7 @@
 const express = require('express');
 const Response = require('../utils/response')
 const Formulario = require('../models/formulario');
-const FormularioRepresentante = require('../models/formularioRepresentante');
+const Diagnostico = require('../models/diagnostico');
 const Pregunta = require('../models/pregunta');
 const { verificarToken, verificarNotRepresentant } = require('../middlewares/autentication');
 const _ = require('underscore')
@@ -110,7 +110,7 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], async
     //_.pick es filtrar y solo elegir esas del body
     let body = _.pick(req.body, ['tipo', 'pregunta', 'realizadoPor'])
 
-    if (body.pregunta == '') {
+    if (body.pregunta == '' || !body.pregunta) {
         return Response.BadRequest(null, res, 'El formulario debe tener preguntas')
     } else {
         for (let i = 0; i < body.pregunta.length; i++) {
@@ -133,17 +133,16 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], async
         }
 
         if (errors.err == 0 && errors.notFound == 0 && errors.erased == 0) {
-            await Formulario.findByIdAndUpdate(
-                id,
-                body,
-                { runValidators: true, context: 'query' },
-                (err, formularioDB) => {
+            await Formulario.findById(id, async (err, formularioDB) => {
+                if (err) return Response.BadRequest(err, res)
+                if (!formularioDB) return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
+                if (!formularioDB.estado) return Response.BadRequest(err, res, 'El formulario actualmente está borrado.')
+                await Formulario.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
                     if (err) return Response.BadRequest(err, res)
-                    if (!formularioDB) return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
-                    if (!formularioDB.estado) return Response.BadRequest(err, res, 'El formulario actualmente está borrado.')
                     Response.GoodRequest(res)
-                }
-            )
+                })
+            })
+
         } else {
             Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos, ' + errors.erased + ' errores de entidades borradas, y ' + errors.notFound + ' errores de entidades no encontradas.' })
             Response.BadRequest(errors, res)
@@ -158,21 +157,23 @@ app.delete('/api/formulario/:id', [verificarToken, verificarNotRepresentant], as
     let cambiarEstado = {
         estado: false
     }
-    await FormularioRepresentante.findOne({ formulario: id }, async (err, formularioRepresentanteDB) => {
+    await Diagnostico.findOne({ formulario: id }, async (err, diagnosticoDB) => {
         if (err) return Response.BadRequest(err, res)
-        if (formularioRepresentanteDB) {
+        if (diagnosticoDB) {
             await Formulario.findByIdAndUpdate(id, cambiarEstado, (err, formularioBorrado) => {
                 if (err) return Response.BadRequest(err, res)
                 if (!formularioBorrado) return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
                 if (!formularioBorrado.estado) return Response.BadRequest(err, res, 'El formulario actualmente está borrado.')
-
-                Response.GoodRequest(res)
+                await Formulario.findByIdAndUpdate(id, cambiarEstado, (err) => {
+                    if (err) return Response.BadRequest(err, res)
+                    Response.GoodRequest(res)
+                })
             })
+
         } else {
             await Formulario.findByIdAndRemove(id, cambiarEstado, (err, formularioBorrado) => {
                 if (err) return Response.BadRequest(err, res)
                 if (!formularioBorrado) return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
-
                 Response.GoodRequest(res)
             })
         }
@@ -188,13 +189,16 @@ app.put('/api/formulario/:id/restaurar', [verificarToken, verificarNotRepresenta
         estado: true
     }
 
-    await Formulario.findByIdAndUpdate(id, cambiarEstado, (err, formularioRestaurado) => {
+    await Formulario.findById(id, async (err, formularioRestaurado) => {
         if (err) return Response.BadRequest(err, res)
         if (!formularioRestaurado) return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
         if (formularioRestaurado.estado) return Response.BadRequest(err, res, 'El formulario actualmente no está borrado.')
-
-        Response.GoodRequest(res)
+        await Formulario.findByIdAndUpdate(id, cambiarEstado, (err) => {
+            if (err) return Response.BadRequest(err, res)
+            Response.GoodRequest(res)
+        })
     })
+
 })
 
 module.exports = app;

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<body>
+    <div id="divPadre">
+    <h1>Hola <%= nombre%> <%= apellido%></h1>
+    <h2>Te damos la bienvenida a CTC</h2>
+    <div id="divHijo">
+    
+        <h4>Dedica unos segundos para confirmar que tu dirección de correo electrónico es correcta.</h4>
+
+        <a href="https://www.youtube.com/watch?v=NUYvbT6vTPs" target="_blank">
+            <button class="button">
+                <h3>Confirma tu correo electrónico</h3>
+            </button>
+        </a>
+        </div>
+        <%= token%>
+        <h4>CTC - Calidad Turismo Comunitario</h4>
+    </div>
+</body>
+
+</html>
+
+<style>
+    
+    #divPadre {
+    font-family: segoe UI;
+    background-color: black;
+    	text-align:center;
+        color: white;
+        padding-bottom:5%;
+        padding-top:5%;
+	}
+    
+	#divHijo {
+    font-family: segoe UI;
+    	width:65%;
+     	margin:0px auto;
+        color: white;
+	}
+    
+    .button {
+        border: 5px solid #4CAF50;
+        padding: 5px 20px;
+        border-radius: 40px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        margin: 4px 2px;
+        cursor: pointer;
+        background-color: #4CAF50;
+        color: white;
+    }
+</style>

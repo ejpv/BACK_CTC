@@ -27,6 +27,15 @@ Expiracion token
 
 process.env.CADUCIDAD_TOKEN = process.env.CADUCIDAD_TOKEN || '24h'
 
+
+/*
+============================
+Expiración de password
+============================
+*/
+
+process.env.CADUCIDAD_PASS = process.env.CADUCIDAD_PASS || '10min'
+
 /*
 ============================
 Semilla Token
@@ -57,3 +66,19 @@ Almacenamiento
 ============================
 */
 process.env.SANDBOX = process.env.SANDBOX || path.join(__dirname, '../../.sandbox')
+
+/*
+=========================
+Nombre de usuario email
+=========================
+*/
+
+process.env.USER_EMAIL = process.env.USER_EMAIL
+
+/*
+=========================
+Contraseña email
+=========================
+*/
+
+process.env.PASSWORD = process.env.PASSWORD

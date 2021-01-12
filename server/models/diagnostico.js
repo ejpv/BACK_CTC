@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 
 let Schema = mongoose.Schema
 
-let formularioRepresentanteSchema = new Schema({
+let diagnosticoSchema = new Schema({
     establecimiento: { type: Schema.Types.ObjectId, ref: 'establecimiento', required: [true, 'El establecimiento es necesario'] },
     formulario: { type: Schema.Types.ObjectId, ref: 'formulario', required: [true, 'El formulario es necesario'] },
     respuesta: { type: Array, required: [true, 'Las respuestas son necesarias'] },
@@ -12,4 +12,4 @@ let formularioRepresentanteSchema = new Schema({
     estado: { type: Boolean, default: true }
 })
 
-module.exports = mongoose.model('formularioRepresentante', formularioRepresentanteSchema)
+module.exports = mongoose.model('diagnostico', diagnosticoSchema)

@@ -13,6 +13,7 @@ let verificarToken = (req, res, next) => {
       })
     }
     req.usuario = decoded.usuario
+    req.exp = decoded.exp
     next()
   })
 }
