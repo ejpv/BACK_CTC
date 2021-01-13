@@ -7,7 +7,6 @@ const express = require('express')
 const _ = require('underscore')
 const Path = require("path")
 const ejs = require('ejs')
-const usuario = require('../models/usuario')
 const app = express()
 
 
@@ -27,15 +26,15 @@ app.post('/api/email/verifica/', [verificarToken, verificarAdmin_Rol], async (re
             Path.join(__dirname, '../emails/verificar.ejs'),
 
             {
-                nombre: usuario.nombre,
-                apellido: usuario.apellido,
-                verificacionToken: token,
-                exp: jwt.decode(token).exp
+                nombre: usuarioDB.nombre,
+                apellido: usuarioDB.apellido,
+                exp: jwt.decode(token).exp,
+                token
             },
 
             async (err, html) => {
                 if (err) return Response.BadRequest(err, res)
-                if (!await enviarMensaje(html, usuario.email, asunto)) return Response.BadRequest(err, res, 'No se encuentra destinatario')
+                if (!await enviarMensaje(html, usuarioDB.email, asunto)) return Response.BadRequest(err, res, 'No se encuentra destinatario')
                 const agregartoken = {
                     verificacionToken: token
                 }
@@ -118,10 +117,9 @@ function generarToken(usuarioDB, time) {
         email: usuarioDB.email,
         _id: usuarioDB.id
     })
-    const token = '';
 
     if (time) {
-        token = jwt.sign(
+        let token = jwt.sign(
             {
                 usuario
             },
@@ -130,16 +128,16 @@ function generarToken(usuarioDB, time) {
                 expiresIn: process.env.CADUCIDAD_PASS
             }
         )
+        return token
     } else {
-        token = jwt.sign( 
+        let token = jwt.sign( 
             {
                 usuario
             },
             process.env.SEED_TOKEN
         )
+        return token
     }
-
-    return token
 }
 
 module.exports = app

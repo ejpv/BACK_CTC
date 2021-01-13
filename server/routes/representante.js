@@ -56,7 +56,7 @@ app.post('/api/representante', [verificarToken, verificarNotRepresentant], async
     }
 })
 
-//Ver todos los representantees
+//Ver todos los representantes
 app.get('/api/representantes', [verificarToken, verificarNotRepresentant], async (req, res) => {
     // el estado por defecto es true, solo acepta estado falso por la url
     const estado = req.query.estado === 'false' ? false : true
@@ -65,6 +65,20 @@ app.get('/api/representantes', [verificarToken, verificarNotRepresentant], async
         if (err) return Response.BadRequest(err, res)
 
         await Representante.countDocuments({ estado }, (err, conteo) => {
+            if (err) return Response.BadRequest(err, res)
+
+            Response.GoodRequest(res, representantes, conteo)
+        })
+    })
+})
+
+//Ver todos los representantes que no tienen usuarios asignados
+app.get('/api/representantes/noAsignados', [verificarToken, verificarNotRepresentant], async (req, res) => {
+
+    await Representante.find({usuario: null}).populate({ path: 'usuario', model: 'usuario' }).exec(async (err, representantes) => {
+        if (err) return Response.BadRequest(err, res)
+
+        await Representante.countDocuments({ usuario: null }, (err, conteo) => {
             if (err) return Response.BadRequest(err, res)
 
             Response.GoodRequest(res, representantes, conteo)

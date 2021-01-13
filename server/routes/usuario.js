@@ -145,7 +145,7 @@ app.post('/api/usuario/password', verificarToken, async (req, res) => {
 })
 
 //Cambiar la contraseña con el usuario dentro de la app
-app.put('/api/usuario/changePass', verificarToken, async (req, res) => {
+app.post('/api/usuario/changePass', verificarToken, async (req, res) => {
   const { password } = req.body
   let id = req.usuario._id
   let newPass = {
