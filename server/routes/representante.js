@@ -73,7 +73,7 @@ app.get('/api/representantes', [verificarToken, verificarNotRepresentant], async
 })
 
 //Ver todos los representantes que no tienen usuarios asignados
-app.get('/api/representantes/noAsignados', [verificarToken, verificarNotRepresentant], async (req, res) => {
+app.get ('/api/representantes/noAsignados', [verificarToken, verificarNotRepresentant], async (req, res) => {
 
     await Representante.find({usuario: null}).populate({ path: 'usuario', model: 'usuario' }).exec(async (err, representantes) => {
         if (err) return Response.BadRequest(err, res)
