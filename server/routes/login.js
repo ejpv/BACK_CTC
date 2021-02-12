@@ -11,14 +11,14 @@ app.post('/api/login', async (req, res) => {
 
   //Email y contraseña requridos.
   if (!(body.email && body.password)) {
-    return Response.BadRequest(err, res, 'Email y contraseña Requeridos')
+    return Response.BadRequest(null, res, 'Email y contraseña Requeridos')
   }
 
   await Usuario.findOne({ email: body.email }, (err, usuarioDb) => {
     if (err) return Response.BadRequest(err, res)
 
     //buscando el email
-    if (!usuarioDb || !usuarioDb.estado) return Response.BadRequest(err, res, 'El usuario no existe')
+    if (!usuarioDb || !usuarioDb.estado) return Response.BadRequest(err, res, 'Correo Incorrecto')
 
     //comparar contraseña encriptandola y comparando la encriptación
     if (!bcrypt.compareSync(body.password, usuarioDb.password)) return Response.BadRequest(err, res, 'Contraseña Incorrecta')

@@ -20,75 +20,77 @@ app.post('/api/diagnostico', [verificarToken, verificarNotRepresentant], async (
         erased: 0,
         idErased: []
     }
+    const fecha = new Date().toLocaleDateString()
 
     let diagnostico = new Diagnostico({
-        ejecutadoPor: req.usuario._id
+        ejecutadoPor: req.usuario._id,
+        fecha
     })
 
     if (!body.respuesta) {
-        return Response.BadRequest(null, res, 'El diagnóstico necesita Respuestas, respuesta es necesario')
-    } else {
-        diagnostico.respuesta = body.respuesta
-        for (let i = 0; i < diagnostico.respuesta.length; i++) {
-            await Pregunta.findById(diagnostico.respuesta[i].pregunta, (err, result) => {
-                if (err) {
-                    errors.err += 1
-                    errors.idErr.push(i)
-                }
-                if (!result) {
-                    errors.notFound += 1
-                    errors.idNotFound.push(i)
-                }
-                else {
-                    if (result.estado == false) {
-                        errors.erased += 1
-                        errors.idErased.push(i)
-                    }
-                }
-            })
-        }
-        if (errors.err == 0 && errors.notFound == 0 && errors.erased == 0) {
-            diagnostico.total = body.total
-
-            if (body.formulario && body.establecimiento) {
-                diagnostico.formulario = body.formulario
-
-                await Formulario.findById(body.formulario).exec(async (err, formularioDB) => {
-                    if (err) return Response.BadRequest(err, res)
-                    if (!formularioDB) return Response.BadRequest(err, res, 'No existe el formulario, id inválido')
-                    if (!formularioDB.estado) return Response.BadRequest(err, res, 'El formulario está actualmente borrado')
-                    if (body.establecimiento) {
-
-                        diagnostico.establecimiento = body.establecimiento
-
-                        await Establecimiento.findById(body.establecimiento).exec(async (err, establecimientoDB) => {
-                            if (err) return Response.BadRequest(err, res)
-                            if (!establecimientoDB) return Response.BadRequest(err, res, 'No existe el establecimiento, id inválido')
-                            if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El establecimiento está actualmente borrado')
-
-                            await diagnostico.save((err, diagnosticoDB) => {
-                                if (err) return Response.BadRequest(err, res)
-                                Response.GoodRequest(res, diagnosticoDB)
-                            })
-                        })
-                    } else {
-                        await diagnostico.save((err) => {
-                            if (err) return Response.BadRequest(err, res)
-                        })
-                    }
-                })
-            } else {
-                await diagnostico.save((err) => {
-                    if (err) {
-                        return Response.BadRequest(err, res)
-                    }
-                })
-            }
-        } else {
-            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos, ' + errors.erased + ' errores de entidades borradas, y ' + errors.notFound + ' errores de preguntas no encontradas en las respuestas.' })
-            Response.BadRequest(errors, res)
-        }
-    }
+         return Response.BadRequest(null, res, 'El diagnóstico necesita Respuestas, respuesta es necesario')
+     } else {
+         diagnostico.respuesta = body.respuesta
+         for (let i = 0; i < diagnostico.respuesta.length; i++) {
+             await Pregunta.findById(diagnostico.respuesta[i].pregunta, (err, result) => {
+                 if (err) {
+                     errors.err += 1
+                     errors.idErr.push(i)
+                 }
+                 if (!result) {
+                     errors.notFound += 1
+                     errors.idNotFound.push(i)
+                 }
+                 else {
+                     if (result.estado == false) {
+                         errors.erased += 1
+                         errors.idErased.push(i)
+                     }
+                 }
+             })
+         }
+         if (errors.err == 0 && errors.notFound == 0 && errors.erased == 0) {
+             diagnostico.total = body.total
+ 
+             if (body.formulario && body.establecimiento) {
+                 diagnostico.formulario = body.formulario
+ 
+                 await Formulario.findById(body.formulario).exec(async (err, formularioDB) => {
+                     if (err) return Response.BadRequest(err, res)
+                     if (!formularioDB) return Response.BadRequest(err, res, 'No existe el formulario, id inválido')
+                     if (!formularioDB.estado) return Response.BadRequest(err, res, 'El formulario está actualmente borrado')
+                     if (body.establecimiento) {
+ 
+                         diagnostico.establecimiento = body.establecimiento
+ 
+                         await Establecimiento.findById(body.establecimiento).exec(async (err, establecimientoDB) => {
+                             if (err) return Response.BadRequest(err, res)
+                             if (!establecimientoDB) return Response.BadRequest(err, res, 'No existe el establecimiento, id inválido')
+                             if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El establecimiento está actualmente borrado')
+ 
+                             await diagnostico.save((err, diagnosticoDB) => {
+                                 if (err) return Response.BadRequest(err, res)
+                                 Response.GoodRequest(res, diagnosticoDB)
+                             })
+                         })
+                     } else {
+                         await diagnostico.save((err) => {
+                             if (err) return Response.BadRequest(err, res)
+                         })
+                     }
+                 })
+             } else {
+                 await diagnostico.save((err) => {
+                     if (err) {
+                         return Response.BadRequest(err, res)
+                     }
+                 })
+             }
+         } else {
+             Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos, ' + errors.erased + ' errores de entidades borradas, y ' + errors.notFound + ' errores de preguntas no encontradas en las respuestas.' })
+             Response.BadRequest(errors, res)
+         }
+     }
 })
 
 //Obtener todos los diagnosticos

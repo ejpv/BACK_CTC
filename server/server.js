@@ -1,4 +1,5 @@
 const express = require('express')
+const cors = require('cors')
 const mongoose = require('mongoose')
 const app = express()
 const bodyParser = require('body-parser')
@@ -11,6 +12,9 @@ app.use(bodyParser.urlencoded({ extended: false }))
 // parse application/json
 app.use(bodyParser.json())
 
+// cors para permitir conecciones
+if (process.env.NODE_ENV !== "production") app.use(cors())
+
 // configuración de las rutas
 app.use(require('./routes/index'))
 
@@ -21,7 +25,7 @@ mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useCreateIndex: true,
   useUnifiedTopology: true,
-  useFindAndModify: false 
+  useFindAndModify: false
 })
 
 

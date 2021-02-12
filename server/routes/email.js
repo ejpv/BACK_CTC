@@ -14,6 +14,10 @@ app.post('/api/email/verifica/', [verificarToken, verificarAdmin_Rol], async (re
     let { id } = req.body
     const asunto = 'Verificación de email';
 
+    if (!id) {
+        return Response.BadRequest(null, res, 'No se ha enviado destinatario')
+    }
+
     await Usuario.findById(id, async (err, usuarioDB) => {
         if (err) return Response.BadRequest(err, res)
         if (!usuarioDB) return Response.BadRequest(err, res, 'No se encuentra destinatario')
@@ -104,6 +108,9 @@ async function enviarMensaje(contentHTML, email, asunto) {
             to: email,
             subject: asunto,
             html: contentHTML
+        }).catch((err) => {
+            console.log(err);
+            throw err
         })
         return true
     } else return false
@@ -130,7 +137,7 @@ function generarToken(usuarioDB, time) {
         )
         return token
     } else {
-        let token = jwt.sign( 
+        let token = jwt.sign(
             {
                 usuario
             },

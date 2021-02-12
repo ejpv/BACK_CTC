@@ -9,7 +9,8 @@ let diagnosticoSchema = new Schema({
     //respuesta: ['verdadero','falso', [1,2,3,4,5,6], 2, 'pambilko', 'Estados Unidos de América']
     total: { type: String, default: 0 },
     ejecutadoPor: { type: Schema.Types.ObjectId, ref: 'usuario', required: true },
-    estado: { type: Boolean, default: true }
+    estado: { type: Boolean, default: true },
+    fecha: {type: Date }
 })
 
 module.exports = mongoose.model('diagnostico', diagnosticoSchema)
