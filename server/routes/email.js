@@ -69,13 +69,13 @@ app.post('/api/email/restaura/', async (req, res) => {
             {
                 nombre: usuarioDB.nombre,
                 apellido: usuarioDB.apellido,
-                token,
-                exp: jwt.decode(token).exp
+                exp: jwt.decode(token).exp,
+                token
             },
 
             async (err, html) => {
                 if (err) return Response.BadRequest(err, res)
-                if (!await enviarMensaje(html, usuarioDB.email, asunto)) return Response.BadRequest(err, res, 'No se encuentra destinatario')
+                if (!await enviarMensaje(html, usuarioDB.email, asunto)) return Response.BadRequest(err, res, 'No se pudo enviar el correo')
                 const agregartoken = {
                     verificacionToken: token,
                 }
@@ -103,27 +103,25 @@ async function enviarMensaje(contentHTML, email, asunto) {
     })
 
     if (email) {
+        let error = true
         await transporter.sendMail({
             from: 'Calidad Turismo Comunitario - CTC  <ejporras.fis@unach.edu.ec>',
             to: email,
             subject: asunto,
             html: contentHTML
-        }).catch((err) => {
-            console.log(err);
-            throw err
         })
-        return true
+            .catch(() => {
+                error = false
+            })
+        return error ? true : false
     } else return false
 }
 
 function generarToken(usuarioDB, time) {
 
-    const usuario = new Usuario({
-        nombre: usuarioDB.nombre,
-        apellido: usuarioDB.apellido,
-        email: usuarioDB.email,
+    const usuario = {
         _id: usuarioDB.id
-    })
+    }
 
     if (time) {
         let token = jwt.sign(

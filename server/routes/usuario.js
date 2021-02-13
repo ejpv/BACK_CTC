@@ -63,7 +63,7 @@ app.put('/api/usuario/:id', [verificarToken, verificarAdmin_Rol], async (req, re
 
     await Usuario.findByIdAndUpdate(id, body, { runValidators: true, context: 'query', new: true }, (err, userDB) => {
       if (err) return Response.BadRequest(err, res)
-      
+
       //Si el usuario edita su propio perfil, toca renovar el token para que tenga la inf al día
       if (idloged === id) {
         let token = jwt.sign(

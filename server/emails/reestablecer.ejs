@@ -3,19 +3,20 @@
 
 <body>
     <div id="divPadre">
-        <h1>Hola <%= nombre%> <%= apellido%> </h1>
+        <h1>Hola <%= nombre%>
+                <%= apellido%>
+        </h1>
         <h2>¿Has solicitado reestablecer tu contraseña?</h2>
         <div id="divHijo">
 
             <h4>Si la respuesta es sí, da click en el botón</h4>
 
-            <a href="https://www.youtube.com/watch?v=NUYvbT6vTPs" target="_blank">
+            <a href="http://localhost:8080/restorePass/<%=token%>/<%=exp%>" target="_blank">
                 <button class="button">
                     <h3>Reestablecer contraseña</h3>
                 </button>
             </a>
         </div>
-        <h4><%= token%></h4>
         <h4>Si no es así, comunicate con un administrador del Sistema.</h4>
         <h4>Este mensaje caducará en 10 minutos.</h4>
     </div>
@@ -41,7 +42,7 @@
     }
 
     .button {
-        border: 5px solid #4CAF50;
+        border: 5px solid #80CBC4;
         padding: 5px 20px;
         border-radius: 40px;
         text-align: center;
@@ -49,7 +50,7 @@
         display: inline-block;
         margin: 4px 2px;
         cursor: pointer;
-        background-color: #4CAF50;
+        background-color: #26A69A;
         color: white;
     }
 </style>
