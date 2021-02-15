@@ -25,6 +25,8 @@ app.post('/api/email/verifica/', [verificarToken, verificarAdmin_Rol], async (re
 
         let token = generarToken(usuarioDB, false)
 
+        let pass = usuarioDB.password ? 'true' : 'false'
+
         await ejs.renderFile(
 
             Path.join(__dirname, '../emails/verificar.ejs'),
@@ -32,7 +34,7 @@ app.post('/api/email/verifica/', [verificarToken, verificarAdmin_Rol], async (re
             {
                 nombre: usuarioDB.nombre,
                 apellido: usuarioDB.apellido,
-                exp: jwt.decode(token).exp,
+                password: pass,
                 token
             },
 

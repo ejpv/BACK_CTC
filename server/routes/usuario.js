@@ -151,6 +151,29 @@ app.post('/api/usuario/activar', verificarToken, async (req, res) => {
   })
 })
 
+//Ruta para solo confirmar el correo elctrónico cuando el usuario ya tiene pass definida
+app.post('/api/usuario/confirmarEmail', verificarToken, async (req, res) => {
+  const token = req.headers.token
+  let id = req.usuario._id
+  let activarUsuario = {
+    activado: true,
+    verificacionToken: null
+  }
+
+  await Usuario.findById(id).exec(async (err, usuarioDB) => {
+    if (!usuarioDB) return Response.BadRequest(err, res, 'El usuario no existe')
+    if (!usuarioDB.estado) return Response.BadRequest(err, res, 'El usuario está actualmente borrado')
+    if (token == usuarioDB.verificacionToken) {
+      await Usuario.findByIdAndUpdate(id, activarUsuario, (err) => {
+        if (err) return Response.BadRequest(err, res)
+        Response.GoodRequest(res)
+      })
+    } else {
+      return Response.BadRequest(null, res, 'El token no es el correcto')
+    }
+  })
+})
+
 //reestablecer contraseña
 app.post('/api/usuario/password', verificarToken, async (req, res) => {
   const token = req.headers.token;
