@@ -18,8 +18,6 @@ app.post('/api/avatar/usuario/:id', [verificarToken], (req, res) => {
       return Response.BadRequest(err, res, 'No existe el usuario, id inválido')
     }
 
-
-
     // configuración del almacenamiento
     var storage = multer.diskStorage({
       // destino de la imagen
@@ -39,7 +37,8 @@ app.post('/api/avatar/usuario/:id', [verificarToken], (req, res) => {
       if (err) {
         return Response.BadRequest(err, res)
       }
-      
+      console.log(req);
+
       if (!req.file) {
         return Response.BadRequest(err, res, 'No se pudo encontrar el Archivo')
       }
@@ -49,11 +48,15 @@ app.post('/api/avatar/usuario/:id', [verificarToken], (req, res) => {
         id,
         { avatar: url },
         { new: true, runValidators: true },
-        err => {
+        (err, user) => {
           if (err) {
             return Response.BadRequest(err, res)
           }
-          return Response.GoodRequest(res, url)
+          res.json({
+            ok: true,
+            usuario: user,
+            url
+          })
         }
       )
     })
