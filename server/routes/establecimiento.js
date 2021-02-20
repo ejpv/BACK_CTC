@@ -13,6 +13,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
     let body = req.body
     let toDo = 0
     let establecimiento = new Establecimiento({
+        nombre: body.nombre,
         nombrePropietario: body.nombrePropietario,
         administrador: body.administrador,
         lugar: body.lugar,
@@ -225,7 +226,7 @@ app.get('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
 //editar un establecimiento por id
 app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
-    let body = _.pick(req.body, ['nombrePropietario', 'administrador', 'lugar', 'registro', 'LUAF', 'email', 'nacionalidad', 'web', 'telefono', 'areaProtegida', 'representante'])
+    let body = _.pick(req.body, ['nombre','nombrePropietario', 'administrador', 'lugar', 'registro', 'LUAF', 'email', 'nacionalidad', 'web', 'telefono', 'areaProtegida', 'representante'])
     let toDo = 0
 
     if (body.lugar) {

@@ -2,6 +2,7 @@ const express = require('express')
 const Response = require('../utils/response')
 const bcrypt = require('bcrypt')
 const Usuario = require('../models/usuario')
+const Representante = require('../models/representante')
 const { verificarToken, verificarAdmin_Rol, verificarNotRepresentant } = require('../middlewares/autentication')
 const _ = require('underscore')
 const app = express()
@@ -53,40 +54,73 @@ app.put('/api/usuario/:id', [verificarToken, verificarAdmin_Rol], async (req, re
   let body = _.pick(req.body, ['nombre', 'apellido', 'rol', 'email'])
   await Usuario.findById(id, async (err, usuarioDB) => {
     if (err) return Response.BadRequest(err, res)
-    if (!usuarioDB) return Response.BadRequest(err, res, 'No se encontró al usuario, id inválido')
-    if (!usuarioDB.estado) return Response.BadRequest(err, res, 'El usuario está actualmente Borrado')
+    if (!usuarioDB) return Response.BadRequest(err, res, 'No se encontró al Usuario, id inválido')
+    if (!usuarioDB.estado) return Response.BadRequest(err, res, 'El Usuario está actualmente Borrado')
 
     //Si cambia el email, hay que volver a confirmar el correo
     if (body.email != usuarioDB.email) {
       body.activado = false
     }
+    if (body.rol != usuarioDB.rol && usuarioDB.rol === 'REPRESENTANT_ROLE') {
+      await Representante.find({ usuario: id }).exec(async (err, representanteDB) => {
+        if (err) return Response.BadRequest(err, res)
+        if (representanteDB[0]) return Response.BadRequest(err, res, 'El Usuario está actualmente asignado a un Representante')
+        
+        await Usuario.findByIdAndUpdate(id, body, { runValidators: true, context: 'query', new: true }, (err, userDB) => {
+          if (err) return Response.BadRequest(err, res)
 
-    await Usuario.findByIdAndUpdate(id, body, { runValidators: true, context: 'query', new: true }, (err, userDB) => {
-      if (err) return Response.BadRequest(err, res)
+          //Si el usuario edita su propio perfil, toca renovar el token para que tenga la inf al día
+          if (idloged === id) {
+            let token = jwt.sign(
+              {
+                usuario: userDB
+              },
+              process.env.SEED_TOKEN,
+              { expiresIn: process.env.CADUCIDAD_TOKEN }
+            )
 
-      //Si el usuario edita su propio perfil, toca renovar el token para que tenga la inf al día
-      if (idloged === id) {
-        let token = jwt.sign(
-          {
-            usuario: userDB
-          },
-          process.env.SEED_TOKEN,
-          { expiresIn: process.env.CADUCIDAD_TOKEN }
-        )
+            let exp = jwt.decode(token).exp
 
-        let exp = jwt.decode(token).exp
+            res.json({
+              ok: true,
+              usuario: userDB,
+              token,
+              expireAt: exp
+            })
 
-        res.json({
-          ok: true,
-          usuario: userDB,
-          token,
-          expireAt: exp
+          } else {
+            Response.GoodRequest(res)
+          }
         })
+      })
+    } else {
+      await Usuario.findByIdAndUpdate(id, body, { runValidators: true, context: 'query', new: true }, (err, userDB) => {
+        if (err) return Response.BadRequest(err, res)
 
-      } else {
-        Response.GoodRequest(res)
-      }
-    })
+        //Si el usuario edita su propio perfil, toca renovar el token para que tenga la inf al día
+        if (idloged === id) {
+          let token = jwt.sign(
+            {
+              usuario: userDB
+            },
+            process.env.SEED_TOKEN,
+            { expiresIn: process.env.CADUCIDAD_TOKEN }
+          )
+
+          let exp = jwt.decode(token).exp
+
+          res.json({
+            ok: true,
+            usuario: userDB,
+            token,
+            expireAt: exp
+          })
+
+        } else {
+          Response.GoodRequest(res)
+        }
+      })
+    }
   })
 })
 

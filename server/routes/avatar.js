@@ -37,7 +37,6 @@ app.post('/api/avatar/usuario/:id', [verificarToken], (req, res) => {
       if (err) {
         return Response.BadRequest(err, res)
       }
-      console.log(req);
 
       if (!req.file) {
         return Response.BadRequest(err, res, 'No se pudo encontrar el Archivo')
