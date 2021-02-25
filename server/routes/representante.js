@@ -66,7 +66,8 @@ app.delete('/api/representante/:id', [verificarToken, verificarNotRepresentant],
     let id = req.params.id
 
     let cambiarEstado = {
-        estado: false
+        estado: false,
+        usuario: null
     }
 
     await Representante.findById(id, async (err, representanteDB) => {
@@ -91,7 +92,7 @@ app.put('/api/representante/:id/restaurar', [verificarToken, verificarNotReprese
     await Representante.findById(id, async (err, representanteDB) => {
         if (err) return Response.BadRequest(err, res)
         if (!representanteDB) return Response.BadRequest(err, res, 'El Representante no existe, id inválido')
-        if (!representanteDB.estado) return Response.BadRequest(err, res, 'El Representante no está Borrado')
+        if (representanteDB.estado) return Response.BadRequest(err, res, 'El Representante no está Borrado')
         await Representante.findByIdAndUpdate(id, cambiarEstado, (err) => {
             if (err) return Response.BadRequest(err, res)
             Response.GoodRequest(res)
@@ -130,7 +131,7 @@ app.put('/api/representante/asignar/:id', [verificarToken, verificarNotRepresent
                 //editando
                 await Representante.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
                     if (err) return Response.BadRequest(err, res)
-                    Response.GoodRequest(res)
+                    Response.GoodRequest(res, usuarioDB)
                 })
             })
         })
@@ -178,6 +179,11 @@ app.get('/api/usuarios/representantes/noAsignados', [verificarToken, verificarNo
                     }
                     Response.GoodRequest(res, usuariosNoAsignados)
                 }
+            })
+        } else {
+            await Usuario.find({ estado: true, rol: 'REPRESENTANT_ROLE' }).exec((err, usuariosDB) => {
+                if (err) return Response.BadRequest(err, res)
+                Response.GoodRequest(res, usuariosDB)
             })
         }
     })

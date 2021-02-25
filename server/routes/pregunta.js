@@ -128,7 +128,7 @@ app.put('/api/pregunta/:id/restaurar', [verificarToken, verificarNotRepresentant
   await Pregunta.findById(id, async (err, preguntaDB) => {
     if (err) return Response.BadRequest(err, res)
     if (!preguntaDB) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
-    if (!preguntaDB.estado) return Response.BadRequest(err, res, 'La pregunta actualmente no está borrada.')
+    if (preguntaDB.estado) return Response.BadRequest(err, res, 'La pregunta actualmente no está borrada.')
     await Pregunta.findByIdAndUpdate(id, cambiarEstado, (err) => {
         if (err) return Response.BadRequest(err, res)
         Response.GoodRequest(res)

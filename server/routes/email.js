@@ -10,7 +10,7 @@ const ejs = require('ejs')
 const app = express()
 
 
-app.post('/api/email/verifica/', [verificarToken, verificarAdmin_Rol], async (req, res) => {
+app.post('/api/email/verifica/', verificarToken, async (req, res) => {
     let { id } = req.body
     const asunto = 'Verificación de email';
 
