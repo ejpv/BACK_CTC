@@ -20,7 +20,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
         registro: body.registro,
         LUAF: body.LUAF,
         email: body.email,
-        nacionalidad: body.nombrePropietario,
+        nacionalidad: body.nacionalidad,
         web: body.web,
         telefono: body.telefono,
         areaProtegida: body.areaProtegida,

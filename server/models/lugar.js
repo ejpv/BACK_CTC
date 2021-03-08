@@ -8,7 +8,7 @@ let lugarSchema = new Schema({
     ciudad: { type: String },
     parroquia: { type: String, required: [true, 'La parroquia es necesaria'] },
     lat: { type: String, required: [true, 'La Latitud es necesaria'] },
-    lon: { type: String, required: [true, 'La Longitud es necesaria'] },
+    lng: { type: String, required: [true, 'La Longitud es necesaria'] },
     estado: { type: Boolean, default: true },
 })
 

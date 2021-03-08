@@ -4,7 +4,6 @@ const Lugar = require('../models/lugar')
 const Establecimiento = require('../models/establecimiento')
 const { verificarToken, verificarNotRepresentant } = require('../middlewares/autentication')
 const _ = require('underscore')
-const establecimiento = require('../models/establecimiento')
 const app = express()
 
 //generar un Lugar
@@ -17,7 +16,7 @@ app.post('/api/lugar', [verificarToken, verificarNotRepresentant], async (req, r
         ciudad: body.ciudad,
         parroquia: body.parroquia,
         lat: body.lat,
-        lon: body.lon
+        lng: body.lng
     })
 
     await lugar.save((err, lugarDB) => {
@@ -44,7 +43,7 @@ app.get('/api/lugares', [verificarToken, verificarNotRepresentant], async (req, 
 //Editar un lugar por id
 app.put('/api/lugar/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
-    let body = _.pick(req.body, ['canton', 'provincia', 'parroquia', 'lat', 'lon', 'ciudad'])
+    let body = _.pick(req.body, ['canton', 'provincia', 'parroquia', 'lat', 'lng', 'ciudad'])
 
     await Lugar.findById(id, async (err, lugarDB) => {
         if (err) return Response.BadRequest(err, res)
