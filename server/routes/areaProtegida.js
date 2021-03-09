@@ -47,9 +47,9 @@ app.put('/api/areaProtegida/:id', [verificarToken, verificarNotRepresentant], as
         if (!areaProtegidaDB) return Response.BadRequest(err, res, 'No existe Area Protegida, id inválido')
         if (!areaProtegidaDB.estado) return Response.BadRequest(err, res, 'El Area Protegida actualmente está borrada.')
         await AreaProtegida.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
-                if (err) return Response.BadRequest(err, res)
-                Response.GoodRequest(res)
-            })
+            if (err) return Response.BadRequest(err, res)
+            Response.GoodRequest(res)
+        })
     })
 
 })
@@ -75,10 +75,13 @@ app.delete('/api/areaProtegida/:id', [verificarToken, verificarNotRepresentant],
                 })
             })
         } else {
-            await AreaProtegida.findByIdAndRemove(id, (err, areaDB) => {
+            await AreaProtegida.findById(id, async (err, areaDB) => {
                 if (err) return Response.BadRequest(err, res)
                 if (!areaDB) return Response.BadRequest(err, res, 'No existe Area Protegida, id inválido')
-                Response.GoodRequest(res)
+                await AreaProtegida.findByIdAndRemove(id, (err) => {
+                    if (err) return Response.BadRequest(err, res)
+                    Response.GoodRequest(res)
+                })
             })
         }
     })

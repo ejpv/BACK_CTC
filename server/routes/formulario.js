@@ -160,7 +160,7 @@ app.delete('/api/formulario/:id', [verificarToken, verificarNotRepresentant], as
     await Diagnostico.findOne({ formulario: id }, async (err, diagnosticoDB) => {
         if (err) return Response.BadRequest(err, res)
         if (diagnosticoDB) {
-            await Formulario.findByIdAndUpdate(id, cambiarEstado, async (err, formularioBorrado) => {
+            await Formulario.findById(id, async (err, formularioBorrado) => {
                 if (err) return Response.BadRequest(err, res)
                 if (!formularioBorrado) return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
                 if (!formularioBorrado.estado) return Response.BadRequest(err, res, 'El formulario actualmente está borrado.')
@@ -171,10 +171,13 @@ app.delete('/api/formulario/:id', [verificarToken, verificarNotRepresentant], as
             })
 
         } else {
-            await Formulario.findByIdAndRemove(id, cambiarEstado, (err, formularioBorrado) => {
+            await Formulario.findById(id, async (err, formularioBorrado) => {
                 if (err) return Response.BadRequest(err, res)
                 if (!formularioBorrado) return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
-                Response.GoodRequest(res)
+                await Formulario.findByIdAndRemove(id, cambiarEstado, (err) => {
+                    if (err) return Response.BadRequest(err, res)
+                    Response.GoodRequest(res)
+                })
             })
         }
 

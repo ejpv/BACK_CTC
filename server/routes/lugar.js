@@ -78,11 +78,13 @@ app.delete('/api/lugar/:id', [verificarToken, verificarNotRepresentant], async (
 
 
         } else {
-            await Lugar.findByIdAndRemove(id, (err, lugarDB) => {
+            await Lugar.findById(id, async (err, lugarDB) => {
                 if (err) return Response.BadRequest(err, res)
                 if (!lugarDB) return Response.BadRequest(err, res, 'No existe ese lugar, id inválido')
-
-                Response.GoodRequest(res)
+                await Lugar.findByIdAndRemove(id, (err) => {
+                    if (err) return Response.BadRequest(err, res)
+                    Response.GoodRequest(res)
+                })
             })
         }
 

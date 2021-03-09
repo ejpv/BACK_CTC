@@ -99,18 +99,22 @@ app.delete('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], asyn
         if (!preguntaDB) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
         if (!preguntaDB.estado) return Response.BadRequest(err, res, 'La pregunta está actualmente borrada.')
         await Pregunta.findByIdAndUpdate(id, cambiarEstado, (err) => {
-            if (err) return Response.BadRequest(err, res)
-            Response.GoodRequest(res)
-          })
+          if (err) return Response.BadRequest(err, res)
+          Response.GoodRequest(res)
+        })
       })
-      
+
     } else {
-      await Pregunta.findByIdAndRemove(id, (err, preguntaDB) => {
+      await Pregunta.findById(id, async (err, preguntaDB) => {
         if (err) return Response.BadRequest(err, res)
         if (!preguntaDB) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
 
-        Response.GoodRequest(res)
-      });
+        await Pregunta.findByIdAndRemove(id, (err) => {
+          if (err) return Response.BadRequest(err, res)
+
+          Response.GoodRequest(res)
+        })
+      })
     }
   })
 
@@ -130,9 +134,9 @@ app.put('/api/pregunta/:id/restaurar', [verificarToken, verificarNotRepresentant
     if (!preguntaDB) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
     if (preguntaDB.estado) return Response.BadRequest(err, res, 'La pregunta actualmente no está borrada.')
     await Pregunta.findByIdAndUpdate(id, cambiarEstado, (err) => {
-        if (err) return Response.BadRequest(err, res)
-        Response.GoodRequest(res)
-      })
+      if (err) return Response.BadRequest(err, res)
+      Response.GoodRequest(res)
+    })
   })
 })
 
