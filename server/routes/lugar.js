@@ -40,6 +40,42 @@ app.get('/api/lugares', [verificarToken, verificarNotRepresentant], async (req, 
     })
 })
 
+//Ver todos los lugares No asignados
+app.get('/api/lugares/noAsignados', [verificarToken, verificarNotRepresentant], async (req, res) => {
+    await Establecimiento.find({ estado: true }).exec(async (err, establecimientosDB) => {
+        if (err) return Response.BadRequest(err, res)
+
+        await Lugar.find({ estado: true }).exec(async (err, lugaresDB) => {
+            if (err) return Response.BadRequest(err, res)
+
+            if (lugaresDB[0]) {
+
+                //lugar es obligatorio en establecimiento, solo se verifica que exista almenos un establecimiento
+                if (establecimientosDB[0]) {
+                    let codigosEsta = establecimientosDB.map(v => {
+                        return v.lugar._id
+                    })
+
+                    // console.log("todos los lugares");
+                    // console.log(lugaresDB);
+                    // console.log("los codigos");
+                    // console.log(codigosEsta);
+                    for (let i = 0; i < codigosEsta.length; i++) {
+                        var contiene = lugaresDB.filter(v => v._id.equals(codigosEsta[i]))
+                        var indice = lugaresDB.indexOf(contiene[0]);
+                        lugaresDB.splice(indice, 1);
+                    }
+                    // console.log("lugars sin usar");
+                    // console.log(lugaresDB);
+                    Response.GoodRequest(res, lugaresDB)
+                } else {
+                    Response.GoodRequest(res, lugaresDB)
+                }
+            }
+        })
+    })
+})
+
 //Editar un lugar por id
 app.put('/api/lugar/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id

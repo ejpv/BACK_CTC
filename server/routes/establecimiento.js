@@ -14,7 +14,6 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
     let toDo = 0
     let establecimiento = new Establecimiento({
         nombre: body.nombre,
-        nombrePropietario: body.nombrePropietario,
         administrador: body.administrador,
         lugar: body.lugar,
         registro: body.registro,
@@ -28,17 +27,11 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
     })
     if (establecimiento.lugar) {
         await Lugar.findById(establecimiento.lugar).exec(async (err, lugarDB) => {
-            if (err) {
-                return Response.BadRequest(err, res)
-            }
+            if (err) return Response.BadRequest(err, res)
 
-            if (!lugarDB) {
-                return Response.BadRequest(err, res, 'Lugar no encontrado, id inválido')
-            }
+            if (!lugarDB) return Response.BadRequest(err, res, 'Lugar no encontrado, id inválido')
 
-            if (!lugarDB.estado) {
-                return Response.BadRequest(err, res, 'El Lugar está actualmente Borrado')
-            }
+            if (!lugarDB.estado)  return Response.BadRequest(err, res, 'El Lugar está actualmente Borrado')
 
             //Esto recibe cual es la combinación que se envía desde el cliente
             // ambos ids
@@ -75,12 +68,17 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
                                 error = true
                                 return Response.BadRequest(err, res, 'El Representante ya está asignado a otro establecimiento')
                             }
-                            await establecimiento.save((err, establecimientoDB) => {
+                            await establecimiento.save(async (err, establecimientoDB) => {
                                 if (err) {
                                     return Response.BadRequest(err, res)
                                 }
+                                await Establecimiento.findById(establecimientoDB._id).populate({ path: 'lugar', model: 'lugar' })
+                                    .populate({ path: 'areaProtegida', model: 'areaProtegida' })
+                                    .populate({ path: 'representante', model: 'representante' }).exec((err, establishment) => {
+                                        if (err) return Response.BadRequest(err, res)
 
-                                Response.GoodRequest(res, establecimientoDB)
+                                        return Response.GoodRequest(res, establishment)
+                                    })
                             })
                         })
                     })
@@ -101,12 +99,16 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
                             return Response.BadRequest(err, res, 'El Area Protegida está actualmente Borrada')
                         }
 
-                        await establecimiento.save((err, establecimientoDB) => {
-                            if (err) {
-                                return Response.BadRequest(err, res)
-                            }
+                        await establecimiento.save(async (err, establecimientoDB) => {
+                            if (err) return Response.BadRequest(err, res)
 
-                            Response.GoodRequest(res, establecimientoDB)
+                            await Establecimiento.findById(establecimientoDB._id).populate({ path: 'lugar', model: 'lugar' })
+                                .populate({ path: 'areaProtegida', model: 'areaProtegida' })
+                                .populate({ path: 'representante', model: 'representante' }).exec((err, establishment) => {
+                                    if (err) return Response.BadRequest(err, res)
+
+                                    return Response.GoodRequest(res, establishment)
+                                })
                         })
                     })
                     break;
@@ -149,12 +151,15 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
                                     return Response.BadRequest(err, res, 'El Representante ya está asignado a otro establecimiento')
                                 }
 
-                                await establecimiento.save((err, establecimientoDB) => {
-                                    if (err) {
-                                        return Response.BadRequest(err, res)
-                                    }
+                                await establecimiento.save(async (err, establecimientoDB) => {
+                                    if (err) return Response.BadRequest(err, res)
+                                    await Establecimiento.findById(establecimientoDB._id).populate({ path: 'lugar', model: 'lugar' })
+                                        .populate({ path: 'areaProtegida', model: 'areaProtegida' })
+                                        .populate({ path: 'representante', model: 'representante' }).exec((err, establishment) => {
+                                            if (err) return Response.BadRequest(err, res)
 
-                                    Response.GoodRequest(res, establecimientoDB)
+                                            return Response.GoodRequest(res, establishment)
+                                        })
                                 })
                             })
                         })
@@ -162,12 +167,17 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
                     break;
 
                 default:
-                    await establecimiento.save((err, establecimientoDB) => {
+                    await establecimiento.save(async (err, establecimientoDB) => {
                         if (err) {
                             return Response.BadRequest(err, res)
                         }
+                        await Establecimiento.findById(establecimientoDB._id).populate({ path: 'lugar', model: 'lugar' })
+                            .populate({ path: 'areaProtegida', model: 'areaProtegida' })
+                            .populate({ path: 'representante', model: 'representante' }).exec((err, establishment) => {
+                                if (err) return Response.BadRequest(err, res)
 
-                        Response.GoodRequest(res, establecimientoDB)
+                                return Response.GoodRequest(res, establishment)
+                            })
                     })
                     break;
             }
@@ -175,7 +185,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
         })
     } else {
         //esto es para que mande el error si no existe el lugar
-        await establecimiento.save((err, establecimientoDB) => {
+        await establecimiento.save((err) => {
             if (err) {
                 return Response.BadRequest(err, res)
             }
@@ -226,7 +236,7 @@ app.get('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
 //editar un establecimiento por id
 app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
-    let body = _.pick(req.body, ['nombre','nombrePropietario', 'administrador', 'lugar', 'registro', 'LUAF', 'email', 'nacionalidad', 'web', 'telefono', 'areaProtegida', 'representante'])
+    let body = _.pick(req.body, ['nombre', 'administrador', 'lugar', 'registro', 'LUAF', 'email', 'nacionalidad', 'web', 'telefono', 'areaProtegida', 'representante'])
     let toDo = 0
 
     if (body.lugar) {

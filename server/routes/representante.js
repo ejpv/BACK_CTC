@@ -4,6 +4,7 @@ const Response = require('../utils/response')
 const Usuario = require('../models/usuario')
 const { verificarToken, verificarNotRepresentant } = require('../middlewares/autentication')
 const _ = require('underscore')
+const Establecimiento = require('../models/establecimiento')
 const app = express()
 
 //generar un Representante
@@ -38,6 +39,52 @@ app.get('/api/representantes', [verificarToken, verificarNotRepresentant], async
             if (err) return Response.BadRequest(err, res)
 
             Response.GoodRequest(res, representantes, conteo)
+        })
+    })
+})
+
+//Ver todos los representantes no asignados
+app.get('/api/representantes/noAsignados', [verificarToken, verificarNotRepresentant], async (req, res) => {
+    await Establecimiento.find({ estado: true }).exec(async (err, establecimientosDB) => {
+        if (err) return Response.BadRequest(err, res)
+
+        await Representante.find({ estado: true }).populate({ path: 'usuario', model: 'usuario' }).exec(async (err, representantesDB) => {
+            if (err) return Response.BadRequest(err, res)
+            if (representantesDB[0]) {
+                representantesDB = representantesDB.filter(v => v.usuario != undefined || v.usuario != null)
+                //Verifico que almenos un establecimiento tenga asignado un representante para poder filtrar
+                let existe = false;
+                for (let i = 0; i < establecimientosDB.length; i++) {
+                    if (establecimientosDB[i].representante) {
+                        existe = true
+                    }
+                }
+                //si no hay ninguno, enviará todos los representantes
+                if (existe) {
+                    let codigosEsta = establecimientosDB.map(v => {
+                        return v.representante ? v.representante._id : null
+                    })
+                    codigosEsta = codigosEsta.filter(v => v != null)
+                    // console.log("codigos de representantes en establecimientos");
+                    // console.log(codigosEsta);
+                    // console.log("representantes en bruto");
+                    // console.log(representantesDB);
+                    for (let i = 0; i < codigosEsta.length; i++) {
+                        //representantesNoAsignados = representantesDB.filter(v => v._id.toString() != codigosEsta[i])
+                        //representantesDB.splice(representantesDB.indexOf(codigosEsta[i]), 1); DEFINITIVAMENTE NO SIRVE
+                        var contiene = representantesDB.filter(v => v._id.equals(codigosEsta[i]))
+                        var indice = representantesDB.indexOf(contiene[0]);
+                        representantesDB.splice(indice, 1);
+                    }
+                    // console.log("representantes no asignados");
+                    // console.log(representantesDB);
+                    Response.GoodRequest(res, representantesDB)
+                } else {
+                    Response.GoodRequest(res, representantesDB)
+                }
+            } else {
+                Response.BadRequest(null, res, 'No se encontraron representantes')
+            }
         })
     })
 })
@@ -164,28 +211,27 @@ app.get('/api/usuarios/representantes/noAsignados', [verificarToken, verificarNo
     await Representante.find({ estado: true }).populate({ path: 'usuario', model: 'usuario' }).exec(async (err, representantesDB) => {
         if (err) return Response.BadRequest(err, res)
 
-        if (representantesDB[0]) {
-            let codigosRepre = representantesDB.map(v => {
-                return v.usuario ? v.usuario._id : null
-            })
-            codigosRepre = codigosRepre.filter(v => v != null)
+        await Usuario.find({ estado: true, rol: 'REPRESENTANT_ROLE' }).exec((err, usuariosDB) => {
+            if (err) return Response.BadRequest(err, res)
 
-            await Usuario.find({ estado: true, rol: 'REPRESENTANT_ROLE' }).exec((err, usuariosDB) => {
-                if (err) return Response.BadRequest(err, res)
-                var usuariosNoAsignados = usuariosDB
+            if (representantesDB[0]) {
+                let codigosRepre = representantesDB.map(v => {
+                    return v.usuario ? v.usuario._id : null
+                })
+                codigosRepre = codigosRepre.filter(v => v != null)
+
+                var usuariosNoAsignados = {}
+
                 if (usuariosDB[0]) {
                     for (let i = 0; i < codigosRepre.length; i++) {
-                        usuariosNoAsignados = usuariosNoAsignados.filter(v => v._id.toString() != codigosRepre[i])
+                        usuariosNoAsignados = usuariosDB.filter(v => v._id.toString() != codigosRepre[i])
                     }
                     Response.GoodRequest(res, usuariosNoAsignados)
                 }
-            })
-        } else {
-            await Usuario.find({ estado: true, rol: 'REPRESENTANT_ROLE' }).exec((err, usuariosDB) => {
-                if (err) return Response.BadRequest(err, res)
+            } else {
                 Response.GoodRequest(res, usuariosDB)
-            })
-        }
+            }
+        })
     })
 })
 
