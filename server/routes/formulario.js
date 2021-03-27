@@ -21,7 +21,7 @@ app.post('/api/formulario', [verificarToken, verificarNotRepresentant], async (r
     }
 
     let formulario = new Formulario({
-        tipo: body.tipo,
+        nombre: body.nombre,
         pregunta: body.pregunta,
         realizadoPor: req.usuario._id
 
@@ -108,7 +108,7 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], async
     }
 
     //_.pick es filtrar y solo elegir esas del body
-    let body = _.pick(req.body, ['tipo', 'pregunta', 'realizadoPor'])
+    let body = _.pick(req.body, ['nombre', 'pregunta', 'realizadoPor'])
 
     if (body.pregunta == '' || !body.pregunta) {
         return Response.BadRequest(null, res, 'El formulario debe tener preguntas')
