@@ -15,9 +15,7 @@ app.post('/api/formulario', [verificarToken, verificarNotRepresentant], async (r
         err: 0,
         idErr: [],
         notFound: 0,
-        idNotFound: [],
-        erased: 0,
-        idErased: []
+        idNotFound: []
     }
 
     let formulario = new Formulario({
@@ -37,16 +35,10 @@ app.post('/api/formulario', [verificarToken, verificarNotRepresentant], async (r
                 errors.notFound += 1
                 errors.idNotFound.push(i)
             }
-            else {
-                if (result.estado == false) {
-                    errors.erased += 1
-                    errors.idErased.push(i)
-                }
-            }
         })
     }
 
-    if (errors.err == 0 && errors.notFound == 0 && errors.erased == 0) {
+    if (errors.err == 0 && errors.notFound == 0) {
         await formulario.save((err, formularioDB) => {
             if (err) return Response.BadRequest(err, res)
             Response.GoodRequest(res, formularioDB)
@@ -102,9 +94,7 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], async
         err: 0,
         idErr: [],
         notFound: 0,
-        idNotFound: [],
-        erased: 0,
-        idErased: []
+        idNotFound: []
     }
 
     //_.pick es filtrar y solo elegir esas del body
@@ -123,16 +113,10 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], async
                     errors.notFound += 1
                     errors.idNotFound.push(i)
                 }
-                else {
-                    if (result.estado == false) {
-                        errors.erased += 1
-                        errors.idErased.push(i)
-                    }
-                }
             })
         }
 
-        if (errors.err == 0 && errors.notFound == 0 && errors.erased == 0) {
+        if (errors.err == 0 && errors.notFound == 0) {
             await Formulario.findById(id, async (err, formularioDB) => {
                 if (err) return Response.BadRequest(err, res)
                 if (!formularioDB) return Response.BadRequest(err, res, 'El formulario no existe, id inválido')
@@ -144,7 +128,7 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], async
             })
 
         } else {
-            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos, ' + errors.erased + ' errores de entidades borradas, y ' + errors.notFound + ' errores de entidades no encontradas.' })
+            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos en las preguntas [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas.' })
             Response.BadRequest(errors, res)
         }
     }

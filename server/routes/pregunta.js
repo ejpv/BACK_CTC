@@ -41,8 +41,20 @@ app.get('/api/preguntas', verificarToken, async (req, res) => {
   // el estado por defecto es true, solo acepta estado falso por la url
   const estado = req.query.estado === 'false' ? false : true
 
-  await Pregunta.find({ estado }).exec(async (err, preguntas) => {
+  await Pregunta.find({ estado }).sort({ enunciado: "desc" }).exec(async (err, preguntas) => {
     if (err) return Response.BadRequest(err, res)
+
+    //FUNCION PARA ORDENAR EL ARRAY ALFABETICAMENTE
+    preguntas.sort(function (a, b) {
+      if (a.enunciado.toLowerCase() > b.enunciado.toLowerCase()) {
+        return 1
+      }
+      if (a.enunciado.toLowerCase() < b.enunciado.toLowerCase()) {
+        return -1
+      }
+      // a must be equal to b
+      return 0
+    })
 
     await Pregunta.countDocuments({ estado }, (err, conteo) => {
       if (err) return Response.BadRequest(err, res)
@@ -72,6 +84,7 @@ app.put('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], async (
     if (err) return Response.BadRequest(err, res)
     if (!preguntaDB) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
     if (!preguntaDB.estado) return Response.BadRequest(err, res, 'La pregunta está actualmente borrada.')
+
     await Pregunta.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' },
       (err) => {
         if (err) return Response.BadRequest(err, res)
