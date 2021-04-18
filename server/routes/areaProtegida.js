@@ -37,45 +37,6 @@ app.get('/api/areasProtegidas', [verificarToken, verificarNotRepresentant], asyn
     })
 })
 
-//Ver areas protegidas que no han sido asignadas
-app.get('/api/areasProtegidas/noAsignados', [verificarToken, verificarNotRepresentant], async (req, res) => {
-    await Establecimiento.find({ estado: true }).exec(async (err, establecimientosDB) => {
-        if (err) return Response.BadRequest(err, res)
-
-        await AreaProtegida.find().exec(async (err, areasProtegidasDB) => {
-            if (err) return Response.BadRequest(err, res)
-
-            let existe = false;
-            for (let i = 0; i < establecimientosDB.length; i++) {
-                if (establecimientosDB[i].areaProtegida) {
-                    existe = true
-                }
-            }
-
-            if (existe) {
-                let codigosEsta = establecimientosDB.map(v => {
-                    return v.areaProtegida ? v.areaProtegida._id : null
-                })
-                codigosEsta = codigosEsta.filter(v => v != null)
-                // console.log("areas protegidas ya utilizadas");
-                // console.log(codigosEsta);
-                for (let i = 0; i < codigosEsta.length; i++) {
-                    //areasProtegidasNoAsignados = areasProtegidasDB.filter(v => v._id.toString() != codigosEsta[i])
-                    //areasProtegidasDB.splice(areasProtegidasDB._id.indexOf(codigosEsta[i]), 1)
-                    var contiene = areasProtegidasDB.filter(v => v._id.equals(codigosEsta[i]))
-                        var indice = areasProtegidasDB.indexOf(contiene[0]);
-                        areasProtegidasDB.splice(indice, 1);
-                }
-                // console.log("areas Protegidas no utilizadas en establecimiento");
-                // console.log(areasProtegidasDB);
-                Response.GoodRequest(res, areasProtegidasDB)
-            } else {
-                Response.GoodRequest(res, areasProtegidasDB)
-            }
-        })
-    })
-})
-
 //Editar un areaProtegida por id
 app.put('/api/areaProtegida/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id

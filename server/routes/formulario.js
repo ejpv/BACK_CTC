@@ -44,7 +44,7 @@ app.post('/api/formulario', [verificarToken, verificarNotRepresentant], async (r
             Response.GoodRequest(res, formularioDB)
         })
     } else {
-        Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos, ' + errors.erased + ' errores de entidades borradas, y ' + errors.notFound + ' errores de entidades no encontradas.' })
+        Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos en las preguntas [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas en las preguntas [ ' + errors.idNotFound + ']' })
         Response.BadRequest(errors, res)
     }
 })
@@ -100,6 +100,8 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], async
     //_.pick es filtrar y solo elegir esas del body
     let body = _.pick(req.body, ['nombre', 'pregunta', 'realizadoPor'])
 
+    body.realizadoPor = req.usuario._id
+
     if (body.pregunta == '' || !body.pregunta) {
         return Response.BadRequest(null, res, 'El formulario debe tener preguntas')
     } else {
@@ -107,11 +109,11 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], async
             await Pregunta.findById(body.pregunta[i], (err, result) => {
                 if (err) {
                     errors.err += 1
-                    errors.idErr.push(i)
+                    errors.idErr.push(i + 1)
                 }
                 if (!result) {
                     errors.notFound += 1
-                    errors.idNotFound.push(i)
+                    errors.idNotFound.push(i + 1)
                 }
             })
         }
@@ -128,7 +130,8 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], async
             })
 
         } else {
-            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos en las preguntas [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas.' })
+
+            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos en las preguntas [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas en las preguntas [ ' + errors.idNotFound + ']' })
             Response.BadRequest(errors, res)
         }
     }
