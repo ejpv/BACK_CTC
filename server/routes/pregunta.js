@@ -16,6 +16,7 @@ app.post('/api/pregunta', [verificarToken, verificarNotRepresentant], async (req
   let pregunta = new Pregunta({
     tipo: body.tipo,
     enunciado: body.enunciado,
+    peso: body.peso,
     estado: body.estado
   })
 
@@ -67,7 +68,7 @@ app.get('/api/preguntas', verificarToken, async (req, res) => {
 //edita la información de una pregunta por id
 app.put('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
   let id = req.params.id
-  let body = _.pick(req.body, ['tipo', 'enunciado', 'opciones'])
+  let body = _.pick(req.body, ['tipo', 'enunciado', 'opciones', 'peso'])
 
   if (body.tipo == 'SELECCION' || body.tipo == 'MULTIPLE') {
     if (body.opciones == undefined) return Response.BadRequest(err, res, 'Las Opciones de la preguntas, son necesarias')

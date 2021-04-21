@@ -10,7 +10,7 @@ let diagnosticoSchema = new Schema({
     total: { type: String, default: 0 },
     ejecutadoPor: { type: Schema.Types.ObjectId, ref: 'usuario', required: true },
     estado: { type: Boolean, default: true },
-    fecha: {type: Date }
+    fecha: { type: String, default: new Date().toLocaleDateString() }
 })
 
 module.exports = mongoose.model('diagnostico', diagnosticoSchema)
