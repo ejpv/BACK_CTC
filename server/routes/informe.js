@@ -15,9 +15,7 @@ app.post('/api/informe', [verificarToken, verificarNotRepresentant], async (req,
         err: 0,
         idErr: [],
         notFound: 0,
-        idNotFound: [],
-        erased: 0,
-        idErased: []
+        idNotFound: []
     }
 
     let informe = new Informe({
@@ -39,22 +37,16 @@ app.post('/api/informe', [verificarToken, verificarNotRepresentant], async (req,
                     errors.notFound += 1
                     errors.idNotFound.push(i)
                 }
-                else {
-                    if (result.estado == false) {
-                        errors.erased += 1
-                        errors.idErased.push(i)
-                    }
-                }
             })
         }
 
-        if (errors.err == 0 && errors.notFound == 0 && errors.erased == 0) {
+        if (errors.err == 0 && errors.notFound == 0 ) {
             await informe.save((err, informeDB) => {
                 if (err) return Response.BadRequest(err, res)
                 return Response.GoodRequest(res, informeDB)
             })
         } else {
-            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos, ' + errors.erased + ' errores de entidades borradas, y ' + errors.notFound + ' errores de entidades no encontradas.' })
+            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos y ' + errors.notFound + ' errores de entidades no encontradas.' })
             Response.BadRequest(errors, res)
         }
     } else {
@@ -185,9 +177,7 @@ app.put('/api/informe/:id', [verificarToken, verificarNotRepresentant], async (r
         err: 0,
         idErr: [],
         notFound: 0,
-        idNotFound: [],
-        erased: 0,
-        idErased: []
+        idNotFound: []
     }
     //_.pick es filtrar y solo elegir esas del body
     let body = _.pick(req.body, ['diagnostico', 'conclusion', 'recomendacion', 'observacion'])
@@ -205,16 +195,10 @@ app.put('/api/informe/:id', [verificarToken, verificarNotRepresentant], async (r
                     errors.notFound += 1
                     errors.idNotFound.push(i)
                 }
-                else {
-                    if (result.estado == false) {
-                        errors.erased += 1
-                        errors.idErased.push(i)
-                    }
-                }
             })
         }
 
-        if (errors.err == 0 && errors.notFound == 0 && errors.erased == 0) {
+        if (errors.err == 0 && errors.notFound == 0) {
             await Informe.findById(id, async (err, informeDB) => {
                 if (err) return Response.BadRequest(err, res)
                 if (!informeDB) return Response.BadRequest(err, res, 'El informe no existe, id inválido')
@@ -227,7 +211,7 @@ app.put('/api/informe/:id', [verificarToken, verificarNotRepresentant], async (r
             })
 
         } else {
-            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos, ' + errors.erased + ' errores de entidades borradas, y ' + errors.notFound + ' errores de entidades no encontradas.' })
+            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos y ' + errors.notFound + ' errores de entidades no encontradas.' })
             Response.BadRequest(errors, res)
         }
     }
