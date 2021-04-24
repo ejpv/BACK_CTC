@@ -140,6 +140,23 @@ app.get('/api/diagnostico/:id', verificarToken, async (req, res) => {
         })
 })
 
+//Obtener diagnosticos que el usuario ha realizado a un establecimiento
+app.get('/api/diagnosticos/:ejecutadoPor/:establecimiento', verificarToken, async (req, res) => {
+    let { ejecutadoPor, establecimiento } = req.params
+    await Diagnostico.find({ 'ejecutadoPor': ejecutadoPor, 'establecimiento': establecimiento })
+        .populate({
+            path: 'formulario', model: 'formulario',
+            populate: {
+                path: 'pregunta', model: 'pregunta'
+            }
+        })
+        .sort({ fecha: -1 })
+        .exec((err, diagnosticosDB) => {
+            if (err) return Response.BadRequest(err, res)
+            if (!diagnosticosDB) return Response.BadRequest(err, res, 'No se han realizado Diagnosticos para este Establecimiento')
+            Response.GoodRequest(res, diagnosticosDB)
+        })
+})
 //Editar un diagnostico por id
 app.put('/api/diagnostico/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
