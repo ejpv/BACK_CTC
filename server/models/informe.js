@@ -8,8 +8,10 @@ let informeSchema = new Schema({
     recomendacion: [{ type: String }],
     observacion: [{ type: String }],
     realizadoPor: { type: Schema.Types.ObjectId, ref: 'usuario', required: true },
-    aprobadoPor: { type: Schema.Types.ObjectId, ref: 'usuario',},
-    estado: { type: Boolean, default: true }
+    responsable: { type: Schema.Types.ObjectId, ref: 'usuario', },
+    fechaCreacion: { type: String, default: new Date().toLocaleDateString() },
+    fechaFinal: { type: String, default: null },
+    estado: { type: Boolean, default: null }
 })
 
 module.exports = mongoose.model('informe', informeSchema)

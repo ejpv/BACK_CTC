@@ -21,7 +21,7 @@ app.post('/api/informe', [verificarToken, verificarNotRepresentant], async (req,
     let informe = new Informe({
         conclusion: body.conclusion,
         recomendacion: body.recomendacion,
-        observación: body.observación,
+        observacion: body.observacion,
         realizadoPor: req.usuario._id
     })
     if (body.diagnostico) {
@@ -40,7 +40,7 @@ app.post('/api/informe', [verificarToken, verificarNotRepresentant], async (req,
             })
         }
 
-        if (errors.err == 0 && errors.notFound == 0 ) {
+        if (errors.err == 0 && errors.notFound == 0) {
             await informe.save((err, informeDB) => {
                 if (err) return Response.BadRequest(err, res)
                 return Response.GoodRequest(res, informeDB)
@@ -55,70 +55,7 @@ app.post('/api/informe', [verificarToken, verificarNotRepresentant], async (req,
 
 })
 
-//Obtener todos los informes
-app.get('/api/informes', [verificarToken, verificarNotRepresentant], (req, res) => {
-    // el estado por defecto es true, solo acepta estado falso por la url
-    const estado = req.query.estado === 'false' ? false : true
-
-    Informe.find({ estado })
-        .populate({
-            path: 'diagnostico', model: 'diagnostico',
-            populate: {
-                path: 'formulario', model: 'formulario', populate: {
-                    path: 'pregunta', model: 'pregunta'
-                }
-            },
-            populate: {
-                path: 'establecimiento', model: 'establecimiento', populate: {
-                    path: 'representante', model: 'representante'
-                }
-            }
-        })
-        .populate({ path: 'aprobadoPor', model: 'usuario' })
-        .populate({ path: 'realizadoPor', model: 'usuario' })
-        .exec((err, informes) => {
-            if (err) {
-                return Response.BadRequest(err, res)
-            }
-
-            Informe.countDocuments({ estado }, (err, conteo) => {
-                if (err) {
-                    return Response.BadRequest(err, res)
-                }
-                Response.GoodRequest(res, informes, conteo)
-            })
-        })
-})
-
-//Obtener un informe
-app.get('/api/informe/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
-    let id = req.params.id
-
-    await Informe.findById(id)
-        .populate({
-            path: 'diagnostico', model: 'diagnostico',
-            populate: {
-                path: 'formulario', model: 'formulario', populate: {
-                    path: 'pregunta', model: 'pregunta'
-                }
-            },
-            populate: {
-                path: 'establecimiento', model: 'establecimiento', populate: {
-                    path: 'representante', model: 'representante'
-                }
-            }
-        })
-        .populate({ path: 'aprobadoPor', model: 'usuario' })
-        .populate({ path: 'realizadoPor', model: 'usuario' })
-        .exec((err, informeDB) => {
-            if (err) return Response.BadRequest(err, res)
-            if (!informeDB) return Response.BadRequest(err, res, 'Informe no ha sido encontrado, id inválido')
-            if (informeDB.estado == false) return Response.BadRequest(err, res, 'Informe está actualmente borrado.')
-            return Response.GoodRequest(res, informeDB)
-        })
-})
-
-//Obtener los informes de un representante
+//Obtener los informes aprobados de un representante
 app.get('/api/informes/representante/:id', verificarToken, async (req, res) => {
     let id = req.params.id
     //Para ver si el representante ingresado existe o está borrado
@@ -133,7 +70,7 @@ app.get('/api/informes/representante/:id', verificarToken, async (req, res) => {
             if (!establecimientoDB) return Response.BadRequest(err, res, 'El Representante no está asignado a ningún establecimiento')
             if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente borrado')
 
-            //Para verificar si a ese establecimiento se le han realizado los formularios
+            //Para verificar si a ese establecimiento se le han realizado los diagnosticos
             await Diagnostico.find({ establecimiento: establecimientoDB._id }).exec(async (err, diagnosticos) => {
                 if (err) return Response.BadRequest(err, res)
                 if (!diagnosticos[0]) return Response.BadRequest(err, res, 'No se le han tomado diagnósticos al establecimiento')
@@ -144,7 +81,7 @@ app.get('/api/informes/representante/:id', verificarToken, async (req, res) => {
                 })
 
                 //Utilizar el array lleno de ids y buscar los informes que la contengan
-                await Informe.find({ diagnostico: { $in: diagnosticosID } })
+                await Informe.find({ diagnostico: { $in: diagnosticosID }, estadoAprobacion: true })
                     .populate({
                         path: 'diagnostico', model: 'diagnostico',
                         populate: {
@@ -170,6 +107,39 @@ app.get('/api/informes/representante/:id', verificarToken, async (req, res) => {
     })
 })
 
+//Obtener informes realizados por un Tecnico a un establecimiento
+app.get('/api/informes/:realizadoPor/:establecimiento', verificarToken, async (req, res) => {
+    let { realizadoPor, establecimiento } = req.params
+
+    //Obtiene los informes realizados por el usuario Técnico
+    await Informe.find({ realizadoPor: realizadoPor })
+        .populate({
+            path: 'diagnostico', model: 'diagnostico',
+            populate: {
+                path: 'formulario', model: 'formulario',
+                populate: {
+                    path: 'pregunta', model: 'pregunta'
+                }
+            }
+        })
+        .populate({ path: 'establecimiento', model: 'establecimiento' })
+        .populate({ path: 'aprobadoPor', model: 'usuario' })
+        .populate({ path: 'realizadoPor', model: 'usuario' })
+
+        //ordena descendientemente por la fecha
+        .sort({ fechaCreacion: -1 })
+        .exec((err, informes) => {
+            if (err) return Response.BadRequest(err, res)
+            if (!informes[0]) return Response.BadRequest(err, res, 'Informes no encontrados, no se han realizado informes para el establecimiento.')
+
+            //Filtra solo los del establecimiento en el que el usuario está actualmente por el id
+            var informesEstablecimiento = informes.filter(v => {
+                return v.diagnostico[0].establecimiento._id.toString() === establecimiento
+            })
+            return Response.GoodRequest(res, informesEstablecimiento)
+        })
+})
+
 //Editar un informe
 app.put('/api/informe/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
@@ -180,7 +150,7 @@ app.put('/api/informe/:id', [verificarToken, verificarNotRepresentant], async (r
         idNotFound: []
     }
     //_.pick es filtrar y solo elegir esas del body
-    let body = _.pick(req.body, ['diagnostico', 'conclusion', 'recomendacion', 'observacion'])
+    let body = _.pick(req.body, ['diagnostico', 'conclusion', 'recomendacion', 'observacion', 'estado'])
 
     if (body.diagnostico.includes('')) {
         return Response.BadRequest(null, res, 'No pueden existir diagnosticos vacios o un solo diagnostico')
@@ -202,8 +172,10 @@ app.put('/api/informe/:id', [verificarToken, verificarNotRepresentant], async (r
             await Informe.findById(id, async (err, informeDB) => {
                 if (err) return Response.BadRequest(err, res)
                 if (!informeDB) return Response.BadRequest(err, res, 'El informe no existe, id inválido')
-                if (informeDB.estado === false) return Response.BadRequest(err, res, 'El informe actualmente está borrado.')
-                if (informeDB.aprobadoPor) return Response.BadRequest(err, res, 'El Informe ya está aprobado y no se puede editar')
+                if (informeDB.estado) return Response.BadRequest(err, res, 'El Informe ya está aprobado y no se puede editar')
+                if (informeDB.estado === false) {
+                    body.estado = null
+                }
                 await Informe.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
                     if (err) return Response.BadRequest(err, res)
                     Response.GoodRequest(res)
@@ -217,81 +189,41 @@ app.put('/api/informe/:id', [verificarToken, verificarNotRepresentant], async (r
     }
 })
 
-//Borrar un informe
+//Borrar un informe si esta por aprobar o rechazado
 app.delete('/api/informe/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
 
-    let cambiarEstado = {
-        estado: false
-    }
-
     await Informe.findById(id).exec(async (err, informe) => {
-        if (informe) {
-            if (!informe.aprobadoPor) {
-                await Informe.findByI(id, async (err, informeDB) => {
-                    if (err) return Response.BadRequest(err, res)
-                    if (!informeDB) return Response.BadRequest(err, res, 'El informe no existe, id inválido')
-                    if (!informeDB.estado) return Response.BadRequest(err, res, 'El informe está actualmente borrado')
-                    await Informe.findByIdAndUpdate(id, cambiarEstado, { runValidators: true, context: 'query' }, (err) => {
-                        if (err) return Response.BadRequest(err, res)
-                        Response.GoodRequest(res)
-                    })
-                })
-            } else {
-                return Response.BadRequest(err, res, 'Un informe aprobado no puede ser borrado.')
-            }
-        } else {
-            return Response.BadRequest(err, res, 'El informe no existe, id inválido')
-        }
-
-    })
-})
-
-//Restaurar un informe
-app.put('/api/informe/:id/restaurar', [verificarToken, verificarNotRepresentant], async (req, res) => {
-    let id = req.params.id
-
-    let cambiarEstado = {
-        estado: true
-    }
-    await Informe.findById(id, async (err, informeDB) => {
         if (err) return Response.BadRequest(err, res)
-        if (!informeDB) return Response.BadRequest(err, res, 'El informe no existe, id inválido')
-        if (informeDB.estado) return Response.BadRequest(err, res, 'El informe no está actualmente borrado.')
-        await Informe.findByIdAndUpdate(id, cambiarEstado, { runValidators: true, context: 'query' }, (err) => {
+        if (!informe) return Response.BadRequest(err, res, 'El informe no existe, id inválido')
+        if (informe.estado) return Response.BadRequest(err, res, 'Un informe aprobado no puede ser borrado.')
+
+        await Informe.findByIdAndRemove(id, (err) => {
             if (err) return Response.BadRequest(err, res)
             Response.GoodRequest(res)
         })
     })
 })
 
-//Aprobar un informe
-app.put('/api/informe/aprobar/:id', [verificarToken, verificarAdmin_Rol], async (req, res) => {
+//Cambiar el estado de un informe
+app.put('/api/informe/cambiarEstado/:id/:estadoAprobacion', [verificarToken, verificarAdmin_Rol], async (req, res) => {
     let id = req.params.id
 
-    let aprobar = {
-        aprobadoPor: req.usuario._id
+    let cambiarEstado = {
+        estado: req.params.estado,
+        responsable: req.usuario._id,
+        fechaFinal: new Date().toLocaleDateString()
     }
 
     await Informe.findById(id).exec(async (err, informe) => {
-        if (informe) {
-            if (informe.estado) {
-                await Informe.findById(id, async (err, informeDB) => {
-                    if (err) return Response.BadRequest(err, res)
-                    if (!informeDB) return Response.BadRequest(err, res, 'El informe no existe, id inválido')
-                    if (informeDB.aprobadoPor) return Response.BadRequest(err, res, 'El informe ya se encuentra aprobado.')
-                    await Informe.findByIdAndUpdate(id, aprobar, (err) => {
-                        if (err) return Response.BadRequest(err, res)
-                        Response.GoodRequest(res)
-                    })
-                })
-            } else {
-                return Response.BadRequest(err, res, 'Un informe borrado no puede ser aprobado.')
-            }
-        } else {
-            return Response.BadRequest(err, res, 'El informe no existe, id inválido')
-        }
+        if (err) return Response.BadRequest(err, res)
+        if (!informe) return Response.BadRequest(err, res, 'El informe no existe, id inválido')
+        await Informe.findByIdAndUpdate(id, cambiarEstado, (err) => {
+            if (err) return Response.BadRequest(err, res)
+            Response.GoodRequest(res)
+        })
     })
 })
+
 
 module.exports = app
