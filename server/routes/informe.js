@@ -125,7 +125,9 @@ app.get('/api/informes', verificarToken, async (req, res) => {
         })
         .populate({ path: 'responsable', model: 'usuario' })
         .populate({ path: 'realizadoPor', model: 'usuario' })
-        .sort({ fechaCreacion: -1 })
+        .sort(
+            estado === null ? { fechaCreacion: -1 } : { fechaFinal: -1 }
+        )
         .exec(async (err, informesDB) => {
             if (err) {
                 return Response.BadRequest(err, res)
