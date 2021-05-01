@@ -97,6 +97,7 @@ app.get('/api/informes/representante/:id', verificarToken, async (req, res) => {
                     })
                     .populate({ path: 'aprobadoPor', model: 'usuario' })
                     .populate({ path: 'realizadoPor', model: 'usuario' })
+                    .sort({ fechaCreacion: -1 })
                     .exec((err, informes) => {
                         if (err) return Response.BadRequest(err, res)
                         if (!informes[0]) return Response.BadRequest(err, res, 'Informes no encontrados, no se han realizado informes para el establecimiento asignado al representante.')
@@ -105,6 +106,38 @@ app.get('/api/informes/representante/:id', verificarToken, async (req, res) => {
             })
         })
     })
+})
+
+//Obtener informes dependiendo del estado( null => Pendientes; false => Rechazado; true => Aprobado)
+app.get('/api/informes', verificarToken, async (req, res) => {
+    const estado = req.query.estado === 'false' ? false : req.query.estado === 'true' ? true : null
+    await Informe.find({ estado })
+        .populate({
+            path: 'diagnostico', model: 'diagnostico',
+            populate: { path: 'establecimiento', model: 'establecimiento' }
+        })
+        .populate({
+            path: 'diagnostico', model: 'diagnostico',
+            populate: {
+                path: 'formulario', model: 'formulario',
+                populate: { path: 'pregunta', model: 'pregunta' }
+            }
+        })
+        .populate({ path: 'responsable', model: 'usuario' })
+        .populate({ path: 'realizadoPor', model: 'usuario' })
+        .sort({ fechaCreacion: -1 })
+        .exec(async (err, informesDB) => {
+            if (err) {
+                return Response.BadRequest(err, res)
+            }
+
+            await Informe.countDocuments({ estado }, (err, conteo) => {
+                if (err) {
+                    return Response.BadRequest(err, res)
+                }
+                Response.GoodRequest(res, informesDB, conteo)
+            })
+        })
 })
 
 //Obtener informes realizados por un Tecnico a un establecimiento
@@ -173,9 +206,8 @@ app.put('/api/informe/:id', [verificarToken, verificarNotRepresentant], async (r
                 if (err) return Response.BadRequest(err, res)
                 if (!informeDB) return Response.BadRequest(err, res, 'El informe no existe, id inválido')
                 if (informeDB.estado) return Response.BadRequest(err, res, 'El Informe ya está aprobado y no se puede editar')
-                if (informeDB.estado === false) {
-                    body.estado = null
-                }
+
+                body.estado = null
                 await Informe.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
                     if (err) return Response.BadRequest(err, res)
                     Response.GoodRequest(res)
@@ -206,18 +238,32 @@ app.delete('/api/informe/:id', [verificarToken, verificarNotRepresentant], async
 })
 
 //Cambiar el estado de un informe
-app.put('/api/informe/cambiarEstado/:id/:estadoAprobacion', [verificarToken, verificarAdmin_Rol], async (req, res) => {
+app.put('/api/informe/cambiarEstado/:id/:estado', [verificarToken, verificarAdmin_Rol], async (req, res) => {
     let id = req.params.id
 
     let cambiarEstado = {
-        estado: req.params.estado,
+        estado: '',
         responsable: req.usuario._id,
-        fechaFinal: new Date().toLocaleDateString()
+        fechaFinal: new Date().toLocaleDateString(),
+        retroalimentacion: ''
+    }
+
+    cambiarEstado.estado = req.params.estado === 'true' ? true : false
+
+    if (cambiarEstado.estado === false) {
+        cambiarEstado.retroalimentacion = req.body.retroalimentacion
     }
 
     await Informe.findById(id).exec(async (err, informe) => {
         if (err) return Response.BadRequest(err, res)
         if (!informe) return Response.BadRequest(err, res, 'El informe no existe, id inválido')
+        if (informe.estado) {
+            return Response.BadRequest(err, res, 'El informe está actualmente Aprobado')
+        } else {
+            if (informe.estado === false) {
+                return Response.BadRequest(err, res, 'El informe está actualmente Rechazado')
+            }
+        }
         await Informe.findByIdAndUpdate(id, cambiarEstado, (err) => {
             if (err) return Response.BadRequest(err, res)
             Response.GoodRequest(res)

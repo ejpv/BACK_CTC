@@ -11,6 +11,7 @@ let informeSchema = new Schema({
     responsable: { type: Schema.Types.ObjectId, ref: 'usuario', },
     fechaCreacion: { type: String, default: new Date().toLocaleDateString() },
     fechaFinal: { type: String, default: null },
+    retroalimentacion: { type: String },
     estado: { type: Boolean, default: null }
 })
 
