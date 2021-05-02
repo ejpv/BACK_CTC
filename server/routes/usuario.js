@@ -47,11 +47,9 @@ app.post('/api/usuario', [verificarToken, verificarAdmin_Rol], async (req, res) 
 app.put('/api/usuario/:id', [verificarToken, verificarAdmin_Rol], async (req, res) => {
   let id = req.params.id
 
-  //Obteniendo el id del usuario logeado
-  let idloged = req.usuario._id
-
   //_.pick es filtrar y solo elegir esas del body
   let body = _.pick(req.body, ['nombre', 'apellido', 'rol', 'email'])
+
   await Usuario.findById(id, async (err, usuarioDB) => {
     if (err) return Response.BadRequest(err, res)
     if (!usuarioDB) return Response.BadRequest(err, res, 'No se encontró al Usuario, id inválido')
@@ -65,62 +63,63 @@ app.put('/api/usuario/:id', [verificarToken, verificarAdmin_Rol], async (req, re
       await Representante.find({ usuario: id }).exec(async (err, representanteDB) => {
         if (err) return Response.BadRequest(err, res)
         if (representanteDB[0]) return Response.BadRequest(err, res, 'El Usuario está actualmente asignado a un Representante')
-        
+
         await Usuario.findByIdAndUpdate(id, body, { runValidators: true, context: 'query', new: true }, (err, userDB) => {
           if (err) return Response.BadRequest(err, res)
-
-          //Si el usuario edita su propio perfil, toca renovar el token para que tenga la inf al día
-          if (idloged === id) {
-            let token = jwt.sign(
-              {
-                usuario: userDB
-              },
-              process.env.SEED_TOKEN,
-              { expiresIn: process.env.CADUCIDAD_TOKEN }
-            )
-
-            let exp = jwt.decode(token).exp
-
-            res.json({
-              ok: true,
-              usuario: userDB,
-              token,
-              expireAt: exp
-            })
-
-          } else {
-            Response.GoodRequest(res)
-          }
+          Response.GoodRequest(res)
         })
       })
     } else {
       await Usuario.findByIdAndUpdate(id, body, { runValidators: true, context: 'query', new: true }, (err, userDB) => {
         if (err) return Response.BadRequest(err, res)
-
-        //Si el usuario edita su propio perfil, toca renovar el token para que tenga la inf al día
-        if (idloged === id) {
-          let token = jwt.sign(
-            {
-              usuario: userDB
-            },
-            process.env.SEED_TOKEN,
-            { expiresIn: process.env.CADUCIDAD_TOKEN }
-          )
-
-          let exp = jwt.decode(token).exp
-
-          res.json({
-            ok: true,
-            usuario: userDB,
-            token,
-            expireAt: exp
-          })
-
-        } else {
-          Response.GoodRequest(res)
-        }
+        Response.GoodRequest(res)
       })
     }
+  })
+})
+
+//editar el usuario logeado
+app.put('/api/usuario', [verificarToken], async (req, res) => {
+  //Obteniendo el id del usuario logeado
+  let idloged = req.usuario._id
+
+  //_.pick es filtrar y solo elegir esas del body
+  let body = _.pick(req.body, ['nombre', 'apellido', 'rol', 'email'])
+
+
+  await Usuario.findById(idloged, async (err, usuarioDB) => {
+
+    if (err) return Response.BadRequest(err, res)
+    if (!usuarioDB) return Response.BadRequest(err, res, 'No se encontró al Usuario, id inválido')
+    if (!usuarioDB.estado) return Response.BadRequest(err, res, 'El Usuario está actualmente Borrado')
+
+    //Si cambia el email, hay que volver a confirmar el correo
+    if (body.email != usuarioDB.email) {
+      body.activado = false
+    }
+
+    await Usuario.findByIdAndUpdate(idloged, body, { runValidators: true, context: 'query', new: true }, (err, userDB) => {
+      if (err) return Response.BadRequest(err, res)
+
+      //Si el usuario edita su propio perfil, toca renovar el token para que tenga la inf al día
+      let token = jwt.sign(
+        {
+          usuario: userDB
+        },
+        process.env.SEED_TOKEN,
+        { expiresIn: process.env.CADUCIDAD_TOKEN }
+      )
+
+      let exp = jwt.decode(token).exp
+
+      res.json({
+        ok: true,
+        usuario: userDB,
+        token,
+        expireAt: exp
+      })
+    })
+
   })
 })
 

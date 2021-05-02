@@ -56,16 +56,16 @@ app.post('/api/informe', [verificarToken, verificarNotRepresentant], async (req,
 })
 
 //Obtener los informes aprobados de un representante
-app.get('/api/informes/representante/:id', verificarToken, async (req, res) => {
-    let id = req.params.id
+app.get('/api/informes/representante', verificarToken, async (req, res) => {
+    let id = req.usuario._id
     //Para ver si el representante ingresado existe o está borrado
-    await Representante.findById(id).exec(async (err, representanteDB) => {
+    await Representante.findOne({ usuario: id }).exec(async (err, representanteDB) => {
         if (err) return Response.BadRequest(err, res)
         if (!representanteDB) return Response.BadRequest(err, res, 'Representante no encontrado, id inválido, o error en establecimiento')
         if (!representanteDB.estado) return Response.BadRequest(err, res, 'El Representante está actualmente borrado')
 
         //Para ver si existe algún establecimiento asignado y si existe, comprobar si está biorrado o no
-        await Establecimiento.findOne({ representante: id }).exec(async (err, establecimientoDB) => {
+        await Establecimiento.findOne({ representante: representanteDB._id }).exec(async (err, establecimientoDB) => {
             if (err) return Response.BadRequest(err, res)
             if (!establecimientoDB) return Response.BadRequest(err, res, 'El Representante no está asignado a ningún establecimiento')
             if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente borrado')
@@ -81,7 +81,15 @@ app.get('/api/informes/representante/:id', verificarToken, async (req, res) => {
                 })
 
                 //Utilizar el array lleno de ids y buscar los informes que la contengan
-                await Informe.find({ diagnostico: { $in: diagnosticosID }, estadoAprobacion: true })
+                await Informe.find({ diagnostico: { $in: diagnosticosID }, estado: true })
+                    .populate({
+                        path: 'diagnostico', model: 'diagnostico',
+                        populate: {
+                            path: 'establecimiento', model: 'establecimiento', populate: {
+                                path: 'representante', model: 'representante'
+                            }
+                        }
+                    })
                     .populate({
                         path: 'diagnostico', model: 'diagnostico',
                         populate: {
@@ -89,15 +97,10 @@ app.get('/api/informes/representante/:id', verificarToken, async (req, res) => {
                                 path: 'pregunta', model: 'pregunta'
                             }
                         },
-                        populate: {
-                            path: 'establecimiento', model: 'establecimiento', populate: {
-                                path: 'representante', model: 'representante'
-                            }
-                        }
                     })
-                    .populate({ path: 'aprobadoPor', model: 'usuario' })
+                    .populate({ path: 'responsable', model: 'usuario' })
                     .populate({ path: 'realizadoPor', model: 'usuario' })
-                    .sort({ fechaCreacion: -1 })
+                    .sort({ fechaFinal: -1 })
                     .exec((err, informes) => {
                         if (err) return Response.BadRequest(err, res)
                         if (!informes[0]) return Response.BadRequest(err, res, 'Informes no encontrados, no se han realizado informes para el establecimiento asignado al representante.')

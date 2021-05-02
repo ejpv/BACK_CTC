@@ -1,6 +1,7 @@
 const express = require('express')
 const Response = require('../utils/response')
 const Diagnostico = require('../models/diagnostico')
+const Representante = require('../models/representante')
 const Pregunta = require('../models/pregunta')
 const Formulario = require('../models/formulario')
 const Establecimiento = require('../models/establecimiento')
@@ -115,29 +116,34 @@ app.get('/api/diagnosticos', [verificarToken, verificarNotRepresentant], async (
 })
 
 //Obtener diagnosticos pertenenciente al representante
-app.get('/api/diagnostico/:id', verificarToken, async (req, res) => {
+app.get('/api/diagnosticos/:id', verificarToken, async (req, res) => {
     let id = req.params.id
 
-    await Diagnostico.findById(id)
-        .populate({ path: 'ejecutadoPor', model: 'usuario' })
-        .populate({
-            path: 'establecimiento', model: 'establecimiento',
-            populate: {
-                path: 'representante', model: 'representante'
-            }
-        })
-        .populate({
-            path: 'formulario', model: 'formulario',
-            populate: {
-                path: 'pregunta', model: 'pregunta'
-            }
-        })
-        .exec((err, diagnosticoDB) => {
+    await Representante.findOne({ usuario: id }).exec(async (err, representanteDB) => {
+        if (err) return Response.BadRequest(err, res)
+        if (!representanteDB) return Response.BadRequest(err, res, 'No se ha encontrado Representante asignado')
+
+        await Establecimiento.findOne({ representante: representanteDB._id }).exec(async (err, establecimientoDB) => {
             if (err) return Response.BadRequest(err, res)
-            if (!diagnosticoDB) return Response.BadRequest(err, res, 'El diagnóstico no existe, id inválido')
-            if (!diagnosticoDB.estado) return Response.BadRequest(err, res, 'El diagnóstico está actualmente borrado')
-            Response.GoodRequest(res, diagnosticoDB)
+            if (!establecimientoDB) return Response.BadRequest(err, res, 'El Representante no tiene Establecimiento asignado')
+
+            await Diagnostico.find({ establecimiento: establecimientoDB._id })
+                .populate({ path: 'ejecutadoPor', model: 'usuario' })
+                .populate({
+                    path: 'formulario', model: 'formulario',
+                    populate: {
+                        path: 'pregunta', model: 'pregunta'
+                    }
+                })
+                .sort({ fecha: -1 })
+                .exec((err, diagnosticos) => {
+                    if (err) return Response.BadRequest(err, res)
+                    if (!diagnosticos[0]) return Response.BadRequest(err, res, 'No se han realizado Diagnósticos a este Establecimiento')
+
+                    Response.GoodRequest(res, diagnosticos)
+                })
         })
+    })
 })
 
 //Obtener diagnosticos que el usuario ha realizado a un establecimiento
