@@ -43,6 +43,29 @@ app.get('/api/representantes', [verificarToken, verificarNotRepresentant], async
     })
 })
 
+//Obtener el representante y establecimiento del usuario Logeado
+app.get('/api/representante/:id', [verificarToken], async (req, res) => {
+    let id = req.params.id
+
+    await Representante.findOne({ usuario: id }).populate().exec(async (err, representanteDB) => {
+        if (err) return Response.BadRequest(err, res)
+        if (!representanteDB) return Response.BadRequest(err, 'El Representante no existe')
+        await Establecimiento.findOne({ representante: representanteDB._id })
+            .populate({ model: 'areaProtegida', path: 'areaProtegida' })
+            .populate({ model: 'lugar', path: 'lugar' })
+            .exec((err, establecimientoDB) => {
+                if (err) return Response.BadRequest(err, res)
+                if (!establecimientoDB) {
+                    var objeto = { representante: representanteDB }
+                    Response.GoodRequest(res, objeto)
+                } else {
+                    var objeto = { representante: representanteDB, establecimiento: establecimientoDB }
+                    Response.GoodRequest(res, objeto)
+                }
+            })
+    })
+})
+
 //Ver todos los representantes no asignados
 app.get('/api/representantes/noAsignados', [verificarToken, verificarNotRepresentant], async (req, res) => {
     await Establecimiento.find({ estado: true }).exec(async (err, establecimientosDB) => {
