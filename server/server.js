@@ -1,5 +1,6 @@
 const express = require('express')
 const cors = require('cors')
+const path = require('path')
 const mongoose = require('mongoose')
 const app = express()
 const bodyParser = require('body-parser')
@@ -13,13 +14,15 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
 // cors para permitir conecciones
-if (process.env.NODE_ENV !== "production") app.use(cors())
+if (process.env.NODE_ENV !== 'production') app.use(cors())
 
 // configuración de las rutas
 app.use(require('./routes/index'))
 
 // sandbox publico
 app.use('/image', express.static(process.env.SANDBOX))
+// Aplicación web
+app.use(express.static(path.join(__dirname, '../public/client')))
 
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
@@ -27,7 +30,6 @@ mongoose.connect(process.env.MONGO_URI, {
   useUnifiedTopology: true,
   useFindAndModify: false
 })
-
 
 mongoose.connection.on('error', console.error.bind(console, 'connection error:'))
 mongoose.connection.once('open', function () {

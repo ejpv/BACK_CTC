@@ -5,3 +5,6 @@ node_modules/
 
 # directorio de ficheros
 .sandbox
+
+# Aplicación cliente
+public/client
