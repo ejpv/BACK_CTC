@@ -35,6 +35,7 @@ app.post('/api/email/verifica/', verificarToken, async (req, res) => {
                 nombre: usuarioDB.nombre,
                 apellido: usuarioDB.apellido,
                 password: pass,
+                domain: process.env.PUBLIC_DOMAIN,
                 token
             },
 
@@ -72,6 +73,7 @@ app.post('/api/email/restaura/', async (req, res) => {
                 nombre: usuarioDB.nombre,
                 apellido: usuarioDB.apellido,
                 exp: jwt.decode(token).exp,
+                domain: process.env.PUBLIC_DOMAIN,
                 token
             },
 
