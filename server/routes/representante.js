@@ -74,7 +74,7 @@ app.get('/api/representantes/noAsignados', [verificarToken, verificarNotRepresen
         await Representante.find({ estado: true }).populate({ path: 'usuario', model: 'usuario' }).exec(async (err, representantesDB) => {
             if (err) return Response.BadRequest(err, res)
             if (representantesDB[0]) {
-                representantesDB = representantesDB.filter(v => v.usuario != undefined || v.usuario != null)
+                // representantesDB = representantesDB.filter(v => v.usuario != undefined || v.usuario != null)
                 //Verifico que almenos un establecimiento tenga asignado un representante para poder filtrar
                 let existe = false;
                 for (let i = 0; i < establecimientosDB.length; i++) {
