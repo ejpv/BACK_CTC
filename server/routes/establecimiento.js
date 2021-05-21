@@ -31,6 +31,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
         saneamiento: body.saneamiento,
         energia: body.energia,
         desechos: body.desechos,
+        personal: body.personal,
         areaProtegida: body.areaProtegida,
         representante: body.representante
     })
@@ -225,7 +226,7 @@ app.get('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
 //editar un establecimiento por id
 app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
-    let body = _.pick(req.body, ['nombre', 'administrador', 'registro', 'LUAF', 'email', 'nacionalidad', 'web', 'telefono', 'provincia', 'canton', 'ciudad', 'parroquia', 'lat', 'lng', 'agua', 'saneamiento', 'energia', 'desechos', 'areaProtegida', 'representante'])
+    let body = _.pick(req.body, ['nombre', 'administrador', 'registro', 'LUAF', 'email', 'nacionalidad', 'web', 'telefono', 'provincia', 'canton', 'ciudad', 'parroquia', 'lat', 'lng', 'agua', 'saneamiento', 'energia', 'desechos', 'areaProtegida', 'representante', 'personal'])
     let toDo = 0
 
     //Esto recibe cual es la combinación que se envía desde el cliente

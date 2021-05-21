@@ -78,7 +78,7 @@ app.post('/api/diagnostico', [verificarToken, verificarNotRepresentant], async (
                 })
             }
         } else {
-            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos, y' + errors.notFound + ' errores de preguntas no encontradas en las respuestas.' })
+            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos en las preguntas [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas en las preguntas [ ' + errors.idNotFound + ']' })
             Response.BadRequest(errors, res)
         }
     }
@@ -163,6 +163,7 @@ app.get('/api/diagnosticos/:ejecutadoPor/:establecimiento', verificarToken, asyn
             Response.GoodRequest(res, diagnosticosDB)
         })
 })
+
 //Editar un diagnostico por id
 app.put('/api/diagnostico/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
@@ -272,7 +273,7 @@ app.put('/api/diagnostico/:id', [verificarToken, verificarNotRepresentant], asyn
                     break;
             }
         } else {
-            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos, y' + errors.notFound + ' errores de preguntas no encontradas en las respuestas.' })
+            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos en las preguntas [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas en las preguntas [ ' + errors.idNotFound + ']' })
             Response.BadRequest(errors, res)
         }
 

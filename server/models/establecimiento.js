@@ -22,6 +22,7 @@ let establecimientoSchema = new Schema({
   saneamiento: { type: String },
   energia: { type: String },
   desechos: { type: String },
+  personal: { type: String, default: 0 },
   areaProtegida: { type: Schema.Types.ObjectId, ref: 'AreaProtegida' },
   estado: { type: Boolean, default: true }
 })

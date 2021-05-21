@@ -16,18 +16,26 @@ app.post('/api/pregunta', [verificarToken, verificarNotRepresentant], async (req
   let pregunta = new Pregunta({
     tipo: body.tipo,
     enunciado: body.enunciado,
-    peso: body.peso,
-    estado: body.estado
+    peso: body.peso
   })
 
   if (pregunta.tipo == 'SELECCION' || pregunta.tipo == 'MULTIPLE') {
-    if (body.opciones) {
-      pregunta.opciones = body.opciones
-    } else {
-      return Response.BadRequest(err, res, 'Las Opciones de la preguntas, son necesarias')
-    }
+    if (!body.opciones) return Response.BadRequest(null, res, 'Las Opciones de la preguntas, son necesarias')
+
+    pregunta.opciones = body.opciones
+
   } else {
+
     pregunta.opciones = undefined
+
+    if (pregunta.tipo == 'COMPLEX') {
+      if (!body.encabezado) return Response.BadRequest(null, res, 'El encabezado de la pregunta, es necesario')
+      if (!body.formato) return Response.BadRequest(null, res, 'El formato de la pregunta, es necesario')
+
+      pregunta.encabezado = body.encabezado
+      pregunta.formato = body.formato
+
+    }
   }
 
   await pregunta.save((err, preguntaDB) => {
@@ -68,19 +76,22 @@ app.get('/api/preguntas', verificarToken, async (req, res) => {
 //edita la información de una pregunta por id
 app.put('/api/pregunta/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
   let id = req.params.id
-  let body = _.pick(req.body, ['tipo', 'enunciado', 'opciones', 'peso'])
+  let body = _.pick(req.body, ['tipo', 'enunciado', 'opciones', 'peso', 'categoria', 'formato', 'encabezado'])
 
   if (body.tipo == 'SELECCION' || body.tipo == 'MULTIPLE') {
-    if (body.opciones == undefined) return Response.BadRequest(err, res, 'Las Opciones de la preguntas, son necesarias')
-
-    //esto da true cuando opciones no es un array para postman necesita mas de un valor para ser array
-    if (body.opciones.includes("")) return Response.BadRequest(err, res, 'No se aceptan opciones vacias o una sola opción')
+    if (!body.opciones) return Response.BadRequest(err, res, 'Las Opciones de la preguntas, son necesarias')
 
   } else {
-
     //Si es SN no importa si vienen opciones, las vacia antes de editar
-    body.opciones = []
+    body.opciones = undefined
+
+    if (body.tipo == 'COMPLEX') {
+      if (!body.encabezado) return Response.BadRequest(err, res, 'El encabezado de la pregunta es necesario')
+      if (!body.formato) return Response.BadRequest(err, res, 'El formato de la pregunta es necesario')
+    }
+
   }
+
   await Pregunta.findById(id, async (err, preguntaDB) => {
     if (err) return Response.BadRequest(err, res)
     if (!preguntaDB) return Response.BadRequest(err, res, 'La pregunta no existe, id inválido')
