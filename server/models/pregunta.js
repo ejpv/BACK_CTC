@@ -14,7 +14,6 @@ let preguntaSchema = new Schema({
     encabezado: [{ type: String }],
     formato: { type: Array },
     opciones: [{ type: String }], //para preguntas de tipo multiple o seleccion
-    categoria: { type: Schema.Types.ObjectId, ref: 'categoria' }, //esto porque la ingeneira insistió
     peso: { type: Number, default: 1 }, //esto se refiere al puntaje máximo que puede tener esta pregunta
     estado: { type: Boolean, default: true }
 })

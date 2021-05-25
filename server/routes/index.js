@@ -15,7 +15,7 @@ app.use(require('./informe'))
 app.use(require('./email'))
 //posiblemente sea deprecated
 app.use(require('./busquedas'))
-app.use(require('./categoria'))
+app.use(require('./actividad'))
 
 
 module.exports = app
