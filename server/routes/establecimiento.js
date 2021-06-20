@@ -4,6 +4,7 @@ const Establecimiento = require('../models/establecimiento');
 const Diagnostico = require('../models/diagnostico');
 const Representante = require('../models/representante');
 const AreaProtegida = require('../models/areaProtegida');
+const Actividad = require('../models/actividad')
 const { verificarToken, verificarNotRepresentant } = require('../middlewares/autentication');
 const _ = require('underscore');
 const app = express();
@@ -12,6 +13,12 @@ const app = express();
 app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let body = req.body
     let toDo = 0
+    let errors = {
+        err: 0,
+        idErr: [],
+        notFound: 0,
+        idNotFound: []
+    }
     let establecimiento = new Establecimiento({
         nombre: body.nombre,
         administrador: body.administrador,
@@ -21,6 +28,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
         nacionalidad: body.nacionalidad,
         web: body.web,
         telefono: body.telefono,
+        comunidad: body.comunidad,
         provincia: body.provincia,
         canton: body.canton,
         ciudad: body.ciudad,
@@ -49,139 +57,171 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
     switch (toDo) {
         case 1:
             await Representante.findById(establecimiento.representante).exec(async (err, representanteDB) => {
-                if (err) {
-                    error = true
-                    return Response.BadRequest(err, res)
-                }
-                if (!representanteDB) {
-                    error = true
-                    return Response.BadRequest(err, res, 'Representante no encontrado, id inválido')
-                }
-                if (!representanteDB.estado) {
-                    error = true
-                    return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
-                }
+                if (err) return Response.BadRequest(err, res)
+                if (!representanteDB) return Response.BadRequest(err, res, 'Representante no encontrado, id inválido')
+                if (!representanteDB.estado) return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
+
                 await Establecimiento.find({ representante: establecimiento.representante }).exec(async (err, establecimientoDB) => {
-                    if (err) {
-                        error = true
-                        return Response.BadRequest(err, res)
-                    }
+                    if (err) return Response.BadRequest(err, res)
+                    if (establecimientoDB[0]) return Response.BadRequest(err, res, 'El Representante ya está asignado a otro establecimiento')
 
-                    if (establecimientoDB[0]) {
-                        error = true
-                        return Response.BadRequest(err, res, 'El Representante ya está asignado a otro establecimiento')
-                    }
-                    await establecimiento.save(async (err, establecimientoDB) => {
-                        if (err) {
-                            return Response.BadRequest(err, res)
-                        }
-                        await Establecimiento.findById(establecimientoDB._id)
-                            .populate({ path: 'areaProtegida', model: 'areaProtegida' })
-                            .populate({ path: 'representante', model: 'representante' }).exec((err, establishment) => {
-                                if (err) return Response.BadRequest(err, res)
-
-                                return Response.GoodRequest(res, establishment)
+                    if (establecimiento.actividad) {
+                        for (let i = 0; i < establecimiento.actividad.length; i++) {
+                            await Actividad.findById(establecimiento.actividad[i], (err, result) => {
+                                if (err) {
+                                    errors.err += 1
+                                    errors.idErr.push(i)
+                                }
+                                if (!result) {
+                                    errors.notFound += 1
+                                    errors.idNotFound.push(i)
+                                }
                             })
-                    })
+                        }
+                    }
+
+                    if (errors.err == 0 && errors.notFound == 0) {
+                        await establecimiento.save(async (err, establecimientoDB) => {
+                            if (err) return Response.BadRequest(err, res)
+
+                            await Establecimiento.findById(establecimientoDB._id)
+                                .populate({ path: 'areaProtegida', model: 'areaProtegida' })
+                                .populate({ path: 'representante', model: 'representante' })
+                                .populate({ path: 'actividad', model: 'actividad' }).exec((err, establishment) => {
+                                    if (err) return Response.BadRequest(err, res)
+                                    return Response.GoodRequest(res, establishment)
+                                })
+                        })
+                    } else {
+                        Object.assign(errors, { message: '*Error*' + errors.err + ' errores de la Base de datos en las actividades [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas en las actividades [ ' + errors.idNotFound + ']' })
+                        return Response.BadRequest(errors, res)
+                    }
                 })
             })
             break;
 
         case 2:
             await AreaProtegida.findById(establecimiento.areaProtegida).exec(async (err, areaProtegidaDB) => {
-                if (err) {
-                    error = true
-                    return Response.BadRequest(err, res)
-                }
-                if (!areaProtegidaDB) {
-                    error = true
-                    return Response.BadRequest(err, res, 'Area Protegida no encontrada, id inválido')
-                }
-                if (!areaProtegidaDB.estado) {
-                    error = true
-                    return Response.BadRequest(err, res, 'El Area Protegida está actualmente Borrada')
-                }
+                if (err) return Response.BadRequest(err, res)
+                if (!areaProtegidaDB) return Response.BadRequest(err, res, 'Area Protegida no encontrada, id inválido')
+                if (!areaProtegidaDB.estado) return Response.BadRequest(err, res, 'El Area Protegida está actualmente Borrada')
 
-                await establecimiento.save(async (err, establecimientoDB) => {
-                    if (err) return Response.BadRequest(err, res)
-
-                    await Establecimiento.findById(establecimientoDB._id)
-                        .populate({ path: 'areaProtegida', model: 'areaProtegida' })
-                        .populate({ path: 'representante', model: 'representante' }).exec((err, establishment) => {
-                            if (err) return Response.BadRequest(err, res)
-
-                            return Response.GoodRequest(res, establishment)
+                if (establecimiento.actividad) {
+                    for (let i = 0; i < establecimiento.actividad.length; i++) {
+                        await Actividad.findById(establecimiento.actividad[i], (err, result) => {
+                            if (err) {
+                                errors.err += 1
+                                errors.idErr.push(i)
+                            }
+                            if (!result) {
+                                errors.notFound += 1
+                                errors.idNotFound.push(i)
+                            }
                         })
-                })
+                    }
+                }
+
+                if (errors.err == 0 && errors.notFound == 0) {
+                    await establecimiento.save(async (err, establecimientoDB) => {
+                        if (err) return Response.BadRequest(err, res)
+
+                        await Establecimiento.findById(establecimientoDB._id)
+                            .populate({ path: 'areaProtegida', model: 'areaProtegida' })
+                            .populate({ path: 'representante', model: 'representante' })
+                            .populate({ path: 'actividad', model: 'actividad' }).exec((err, establishment) => {
+                                if (err) return Response.BadRequest(err, res)
+                                return Response.GoodRequest(res, establishment)
+                            })
+                    })
+                } else {
+                    Object.assign(errors, { message: '*Error*' + errors.err + ' errores de la Base de datos en las actividades [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas en las actividades [ ' + errors.idNotFound + ']' })
+                    return Response.BadRequest(errors, res)
+                }
             })
             break;
 
         case 3:
             await AreaProtegida.findById(establecimiento.areaProtegida).exec(async (err, areaProtegidaDB) => {
-                if (err) {
-                    error = true
-                    return Response.BadRequest(err, res)
-                }
-                if (!areaProtegidaDB) {
-                    error = true
-                    return Response.BadRequest(err, res, 'Area Protegida no encontrada, id inválido')
-                }
-                if (!areaProtegidaDB.estado) {
-                    error = true
-                    return Response.BadRequest(err, res, 'El Area Protegida está actualmente Borrada')
-                }
+                if (err) return Response.BadRequest(err, res)
+                if (!areaProtegidaDB) return Response.BadRequest(err, res, 'Area Protegida no encontrada, id inválido')
+                if (!areaProtegidaDB.estado) return Response.BadRequest(err, res, 'El Area Protegida está actualmente Borrada')
                 await Representante.findById(establecimiento.representante).exec(async (err, representanteDB) => {
-                    if (err) {
-                        error = true
-                        return Response.BadRequest(err, res)
-                    }
-                    if (!representanteDB) {
-                        error = true
-                        return Response.BadRequest(err, res, 'Representante no encontrado, id inválido')
-                    }
-                    if (!representanteDB.estado) {
-                        error = true
-                        return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
-                    }
+                    if (err) return Response.BadRequest(err, res)
+                    if (!representanteDB) return Response.BadRequest(err, res, 'Representante no encontrado, id inválido')
+                    if (!representanteDB.estado) return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
+
                     await Establecimiento.find({ representante: establecimiento.representante }).exec(async (err, establecimientoDB) => {
-                        if (err) {
-                            error = true
-                            return Response.BadRequest(err, res)
-                        }
+                        if (err) return Response.BadRequest(err, res)
+                        if (establecimientoDB[0]) return Response.BadRequest(err, res, 'El Representante ya está asignado a otro establecimiento')
 
-                        if (establecimientoDB[0]) {
-                            error = true
-                            return Response.BadRequest(err, res, 'El Representante ya está asignado a otro establecimiento')
-                        }
-
-                        await establecimiento.save(async (err, establecimientoDB) => {
-                            if (err) return Response.BadRequest(err, res)
-                            await Establecimiento.findById(establecimientoDB._id)
-                                .populate({ path: 'areaProtegida', model: 'areaProtegida' })
-                                .populate({ path: 'representante', model: 'representante' }).exec((err, establishment) => {
-                                    if (err) return Response.BadRequest(err, res)
-
-                                    return Response.GoodRequest(res, establishment)
+                        if (establecimiento.actividad) {
+                            for (let i = 0; i < establecimiento.actividad.length; i++) {
+                                await Actividad.findById(establecimiento.actividad[i], (err, result) => {
+                                    if (err) {
+                                        errors.err += 1
+                                        errors.idErr.push(i)
+                                    }
+                                    if (!result) {
+                                        errors.notFound += 1
+                                        errors.idNotFound.push(i)
+                                    }
                                 })
-                        })
+                            }
+                        }
+
+                        if (errors.err == 0 && errors.notFound == 0) {
+                            await establecimiento.save(async (err, establecimientoDB) => {
+                                if (err) return Response.BadRequest(err, res)
+
+                                await Establecimiento.findById(establecimientoDB._id)
+                                    .populate({ path: 'areaProtegida', model: 'areaProtegida' })
+                                    .populate({ path: 'representante', model: 'representante' })
+                                    .populate({ path: 'actividad', model: 'actividad' }).exec((err, establishment) => {
+                                        if (err) return Response.BadRequest(err, res)
+                                        return Response.GoodRequest(res, establishment)
+                                    })
+                            })
+                        } else {
+                            Object.assign(errors, { message: '*Error*' + errors.err + ' errores de la Base de datos en las actividades [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas en las actividades [ ' + errors.idNotFound + ']' })
+                            return Response.BadRequest(errors, res)
+                        }
                     })
                 })
             })
             break;
 
         default:
-            await establecimiento.save(async (err, establecimientoDB) => {
-                if (err) {
-                    return Response.BadRequest(err, res)
-                }
-                await Establecimiento.findById(establecimientoDB._id)
-                    .populate({ path: 'areaProtegida', model: 'areaProtegida' })
-                    .populate({ path: 'representante', model: 'representante' }).exec((err, establishment) => {
-                        if (err) return Response.BadRequest(err, res)
-
-                        return Response.GoodRequest(res, establishment)
+            if (establecimiento.actividad) {
+                for (let i = 0; i < establecimiento.actividad.length; i++) {
+                    await Actividad.findById(establecimiento.actividad[i], (err, result) => {
+                        if (err) {
+                            errors.err += 1
+                            errors.idErr.push(i)
+                        }
+                        if (!result) {
+                            errors.notFound += 1
+                            errors.idNotFound.push(i)
+                        }
                     })
-            })
+                }
+            }
+
+            if (errors.err == 0 && errors.notFound == 0) {
+                await establecimiento.save(async (err, establecimientoDB) => {
+                    if (err) return Response.BadRequest(err, res)
+
+                    await Establecimiento.findById(establecimientoDB._id)
+                        .populate({ path: 'areaProtegida', model: 'areaProtegida' })
+                        .populate({ path: 'representante', model: 'representante' })
+                        .populate({ path: 'actividad', model: 'actividad' }).exec((err, establishment) => {
+                            if (err) return Response.BadRequest(err, res)
+                            return Response.GoodRequest(res, establishment)
+                        })
+                })
+            } else {
+                Object.assign(errors, { message: '*Error*' + errors.err + ' errores de la Base de datos en las actividades [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas en las actividades [ ' + errors.idNotFound + ']' })
+                return Response.BadRequest(errors, res)
+            }
             break;
     }
 
@@ -193,10 +233,11 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
 app.get('/api/establecimientos', [verificarToken, verificarNotRepresentant], async (req, res) => {
     // el estado por defecto es true, solo acepta estado falso por la url
     const estado = req.query.estado === 'false' ? false : true
-
+    
     await Establecimiento.find({ estado })
         .populate({ path: 'areaProtegida', model: 'areaProtegida' })
         .populate({ path: 'representante', model: 'representante' })
+        .populate({ path: 'actividad', model: 'actividad' })
         .exec(async (err, establecimientos) => {
             if (err) return Response.BadRequest(err, res)
 
@@ -211,9 +252,10 @@ app.get('/api/establecimientos', [verificarToken, verificarNotRepresentant], asy
 app.get('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
 
-    await Establecimiento.findByIdAndUpdate(id)
+    await Establecimiento.findById(id)
         .populate({ path: 'areaProtegida', model: 'areaProtegida' })
         .populate({ path: 'representante', model: 'representante' })
+        .populate({ path: 'actividad', model: 'actividad' })
         .exec((err, establecimientoDB) => {
             if (err) return Response.BadRequest(err, res)
             if (!establecimientoDB) return Response.BadRequest(err, res, 'El establecimiento no existe, id inválido')
@@ -226,8 +268,14 @@ app.get('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
 //editar un establecimiento por id
 app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
-    let body = _.pick(req.body, ['nombre', 'administrador', 'registro', 'LUAF', 'email', 'nacionalidad', 'web', 'telefono', 'provincia', 'canton', 'ciudad', 'parroquia', 'lat', 'lng', 'agua', 'saneamiento', 'energia', 'desechos', 'areaProtegida', 'representante', 'personal'])
+    let body = _.pick(req.body, ['nombre', 'administrador', 'registro', 'LUAF', 'email', 'nacionalidad', 'web', 'telefono', 'provincia', 'canton', 'ciudad', 'parroquia', 'lat', 'lng', 'agua', 'saneamiento', 'energia', 'desechos', 'areaProtegida', 'representante', 'personal', 'actividad', 'comunidad'])
     let toDo = 0
+    let errors = {
+        err: 0,
+        idErr: [],
+        notFound: 0,
+        idNotFound: []
+    }
 
     //Esto recibe cual es la combinación que se envía desde el cliente
     // ambos ids
@@ -242,107 +290,30 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
     switch (toDo) {
         case 1:
             await Representante.findById(body.representante).exec(async (err, representanteDB) => {
-                if (err) {
-                    error = true
-                    return Response.BadRequest(err, res)
-                }
-                if (!representanteDB) {
-                    error = true
-                    return Response.BadRequest(err, res, 'Representante no encontrado, id inválido')
-                }
-                if (!representanteDB.estado) {
-                    error = true
-                    return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
-                }
+                if (err) return Response.BadRequest(err, res)
+                if (!representanteDB) return Response.BadRequest(err, res, 'Representante no encontrado, id inválido')
+                if (!representanteDB.estado) return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
+
                 await Establecimiento.find({ representante: body.representante }).exec(async (err, establecimientoDB) => {
-                    if (err) {
-                        error = true
-                        return Response.BadRequest(err, res)
-                    }
-
-                    if (establecimientoDB[0]) {
-                        error = true
-                        return Response.BadRequest(err, res, 'El Representante ya está asignado a otro establecimiento')
-                    }
-
-                    await Establecimiento.findById(id, async (err, establecimientoDB) => {
-                        if (err) return Response.BadRequest(err, res)
-                        if (!establecimientoDB) return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
-                        if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
-                        await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
-                            if (err) return Response.BadRequest(err, res)
-                            Response.GoodRequest(res)
-                        })
-                    })
-                })
-            })
-            break;
-
-        case 2:
-            await AreaProtegida.findById(body.areaProtegida).exec(async (err, areaProtegidaDB) => {
-                if (err) {
-                    error = true
-                    return Response.BadRequest(err, res)
-                }
-                if (!areaProtegidaDB) {
-                    error = true
-                    return Response.BadRequest(err, res, 'Area Protegida no encontrada, id inválido')
-                }
-                if (!areaProtegidaDB.estado) {
-                    error = true
-                    return Response.BadRequest(err, res, 'El Area Protegida está actualmente Borrada')
-                }
-
-                await Establecimiento.findById(id, async (err, establecimientoDB) => {
                     if (err) return Response.BadRequest(err, res)
-                    if (!establecimientoDB) return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
-                    if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
-                    await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
-                        if (err) return Response.BadRequest(err, res)
-                        Response.GoodRequest(res)
-                    })
-                })
-            })
-            break;
+                    if (establecimientoDB[0]) return Response.BadRequest(err, res, 'El Representante ya está asignado a otro establecimiento')
 
-        case 3:
-            await AreaProtegida.findById(body.areaProtegida).exec(async (err, areaProtegidaDB) => {
-                if (err) {
-                    error = true
-                    return Response.BadRequest(err, res)
-                }
-                if (!areaProtegidaDB) {
-                    error = true
-                    return Response.BadRequest(err, res, 'Area Protegida no encontrada, id inválido')
-                }
-                if (!areaProtegidaDB.estado) {
-                    error = true
-                    return Response.BadRequest(err, res, 'El Area Protegida está actualmente Borrada')
-                }
-                await Representante.findById(body.representante).exec(async (err, representanteDB) => {
-                    if (err) {
-                        error = true
-                        return Response.BadRequest(err, res)
-                    }
-                    if (!representanteDB) {
-                        error = true
-                        return Response.BadRequest(err, res, 'Representante no encontrado, id inválido')
-                    }
-                    if (!representanteDB.estado) {
-                        error = true
-                        return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
-                    }
-                    await Establecimiento.find({ representante: body.representante }).exec(async (err, establecimientoDB) => {
-                        if (err) {
-                            error = true
-                            return Response.BadRequest(err, res)
+                    if (body.actividad) {
+                        for (let i = 0; i < body.actividad.length; i++) {
+                            await Actividad.findById(body.actividad[i], (err, result) => {
+                                if (err) {
+                                    errors.err += 1
+                                    errors.idErr.push(i)
+                                }
+                                if (!result) {
+                                    errors.notFound += 1
+                                    errors.idNotFound.push(i)
+                                }
+                            })
                         }
+                    }
 
-                        if (establecimientoDB[0]) {
-                            error = true
-                            return Response.BadRequest(err, res, 'El Representante ya está asignado a otro establecimiento')
-                        }
-
+                    if (errors.err == 0 && errors.notFound == 0) {
                         await Establecimiento.findById(id, async (err, establecimientoDB) => {
                             if (err) return Response.BadRequest(err, res)
                             if (!establecimientoDB) return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
@@ -352,19 +323,131 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
                                 Response.GoodRequest(res)
                             })
                         })
+                    } else {
+                        Object.assign(errors, { message: '*Error*' + errors.err + ' errores de la Base de datos en las actividades [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas en las actividades [ ' + errors.idNotFound + ']' })
+                        return Response.BadRequest(errors, res)
+                    }
+                })
+            })
+            break;
+
+        case 2:
+            await AreaProtegida.findById(body.areaProtegida).exec(async (err, areaProtegidaDB) => {
+                if (err) return Response.BadRequest(err, res)
+                if (!areaProtegidaDB) return Response.BadRequest(err, res, 'Area Protegida no encontrada, id inválido')
+                if (!areaProtegidaDB.estado) return Response.BadRequest(err, res, 'El Area Protegida está actualmente Borrada')
+
+                if (body.actividad) {
+                    for (let i = 0; i < body.actividad.length; i++) {
+                        await Actividad.findById(body.actividad[i], (err, result) => {
+                            if (err) {
+                                errors.err += 1
+                                errors.idErr.push(i)
+                            }
+                            if (!result) {
+                                errors.notFound += 1
+                                errors.idNotFound.push(i)
+                            }
+                        })
+                    }
+                }
+
+                if (errors.err == 0 && errors.notFound == 0) {
+                    await Establecimiento.findById(id, async (err, establecimientoDB) => {
+                        if (err) return Response.BadRequest(err, res)
+                        if (!establecimientoDB) return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
+                        if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
+                        await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
+                            if (err) return Response.BadRequest(err, res)
+                            Response.GoodRequest(res)
+                        })
+                    })
+                } else {
+                    Object.assign(errors, { message: '*Error*' + errors.err + ' errores de la Base de datos en las actividades [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas en las actividades [ ' + errors.idNotFound + ']' })
+                    return Response.BadRequest(errors, res)
+                }
+            })
+            break;
+
+        case 3:
+            await AreaProtegida.findById(body.areaProtegida).exec(async (err, areaProtegidaDB) => {
+                if (err) return Response.BadRequest(err, res)
+                if (!areaProtegidaDB) return Response.BadRequest(err, res, 'Area Protegida no encontrada, id inválido')
+                if (!areaProtegidaDB.estado) return Response.BadRequest(err, res, 'El Area Protegida está actualmente Borrada')
+
+                await Representante.findById(body.representante).exec(async (err, representanteDB) => {
+                    if (err) return Response.BadRequest(err, res)
+                    if (!representanteDB) return Response.BadRequest(err, res, 'Representante no encontrado, id inválido')
+                    if (!representanteDB.estado) return Response.BadRequest(err, res, 'El Representante está actualmente Borrado')
+
+                    await Establecimiento.find({ representante: body.representante }).exec(async (err, establecimientoDB) => {
+                        if (err) return Response.BadRequest(err, res)
+                        if (establecimientoDB[0]) return Response.BadRequest(err, res, 'El Representante ya está asignado a otro establecimiento')
+
+                        if (body.actividad) {
+                            for (let i = 0; i < body.actividad.length; i++) {
+                                await Actividad.findById(body.actividad[i], (err, result) => {
+                                    if (err) {
+                                        errors.err += 1
+                                        errors.idErr.push(i)
+                                    }
+                                    if (!result) {
+                                        errors.notFound += 1
+                                        errors.idNotFound.push(i)
+                                    }
+                                })
+                            }
+                        }
+
+                        if (errors.err == 0 && errors.notFound == 0) {
+                            await Establecimiento.findById(id, async (err, establecimientoDB) => {
+                                if (err) return Response.BadRequest(err, res)
+                                if (!establecimientoDB) return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
+                                if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
+                                await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
+                                    if (err) return Response.BadRequest(err, res)
+                                    Response.GoodRequest(res)
+                                })
+                            })
+                        } else {
+                            Object.assign(errors, { message: '*Error*' + errors.err + ' errores de la Base de datos en las actividades [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas en las actividades [ ' + errors.idNotFound + ']' })
+                            return Response.BadRequest(errors, res)
+                        }
                     })
                 })
             })
             break;
 
         default:
-            await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err, establecimientoDB) => {
-                if (err) return Response.BadRequest(err, res)
-                if (!establecimientoDB) return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
-                if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
+            if (body.actividad) {
+                for (let i = 0; i < body.actividad.length; i++) {
+                    await Actividad.findById(body.actividad[i], (err, result) => {
+                        if (err) {
+                            errors.err += 1
+                            errors.idErr.push(i)
+                        }
+                        if (!result) {
+                            errors.notFound += 1
+                            errors.idNotFound.push(i)
+                        }
+                    })
+                }
+            }
 
-                Response.GoodRequest(res)
-            })
+            if (errors.err == 0 && errors.notFound == 0) {
+                await Establecimiento.findById(id, async (err, establecimientoDB) => {
+                    if (err) return Response.BadRequest(err, res)
+                    if (!establecimientoDB) return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
+                    if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
+                    await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
+                        if (err) return Response.BadRequest(err, res)
+                        Response.GoodRequest(res)
+                    })
+                })
+            } else {
+                Object.assign(errors, { message: '*Error*' + errors.err + ' errores de la Base de datos en las actividades [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas en las actividades [ ' + errors.idNotFound + ']' })
+                return Response.BadRequest(errors, res)
+            }
             break;
     }
 })

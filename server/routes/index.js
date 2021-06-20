@@ -13,9 +13,8 @@ app.use(require('./representante'))
 app.use(require('./establecimiento'))
 app.use(require('./informe'))
 app.use(require('./email'))
+app.use(require('./actividad'))
 //posiblemente sea deprecated
 app.use(require('./busquedas'))
-app.use(require('./actividad'))
-
 
 module.exports = app

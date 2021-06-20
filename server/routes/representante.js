@@ -50,9 +50,10 @@ app.get('/api/representante/:id', [verificarToken], async (req, res) => {
     await Representante.findOne({ usuario: id }).populate().exec(async (err, representanteDB) => {
         if (err) return Response.BadRequest(err, res)
         if (!representanteDB) return Response.BadRequest(err, 'El Representante no existe')
+
         await Establecimiento.findOne({ representante: representanteDB._id })
             .populate({ model: 'areaProtegida', path: 'areaProtegida' })
-            .populate({ model: 'lugar', path: 'lugar' })
+            .populate({ model: 'actividad', path: 'actividad' })
             .exec((err, establecimientoDB) => {
                 if (err) return Response.BadRequest(err, res)
                 if (!establecimientoDB) {
@@ -88,19 +89,12 @@ app.get('/api/representantes/noAsignados', [verificarToken, verificarNotRepresen
                         return v.representante ? v.representante._id : null
                     })
                     codigosEsta = codigosEsta.filter(v => v != null)
-                    // console.log("codigos de representantes en establecimientos");
-                    // console.log(codigosEsta);
-                    // console.log("representantes en bruto");
-                    // console.log(representantesDB);
+
                     for (let i = 0; i < codigosEsta.length; i++) {
-                        //representantesNoAsignados = representantesDB.filter(v => v._id.toString() != codigosEsta[i])
-                        //representantesDB.splice(representantesDB.indexOf(codigosEsta[i]), 1); DEFINITIVAMENTE NO SIRVE
                         var contiene = representantesDB.filter(v => v._id.equals(codigosEsta[i]))
                         var indice = representantesDB.indexOf(contiene[0]);
                         representantesDB.splice(indice, 1);
                     }
-                    // console.log("representantes no asignados");
-                    // console.log(representantesDB);
                     Response.GoodRequest(res, representantesDB)
                 } else {
                     Response.GoodRequest(res, representantesDB)

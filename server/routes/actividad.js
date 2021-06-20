@@ -23,7 +23,7 @@ app.post('/api/actividad', [verificarToken, verificarAdmin_Rol], async (req, res
 })
 
 //Obtener todas las actividades
-app.get('/api/actividades', [verificarToken, verificarAdmin_Rol], async (req, res) => {
+app.get('/api/actividades', [verificarToken], async (req, res) => {
     await Actividad.find().exec(async (err, actividades) => {
         if (err) return Response.BadRequest(err, res)
 

@@ -11,7 +11,8 @@ let establecimientoSchema = new Schema({
   email: { type: String },
   nacionalidad: { type: String },
   web: { type: String },
-  telefono: { type: String },
+  telefono: [{ type: String }],
+  comunidad: { type: String },
   provincia: { type: String },
   canton: { type: String },
   ciudad: { type: String },
@@ -23,6 +24,7 @@ let establecimientoSchema = new Schema({
   energia: { type: String },
   desechos: { type: String },
   personal: { type: String, default: 0 },
+  actividad: [{ type: Schema.Types.ObjectId, ref: 'actividad' }],
   areaProtegida: { type: Schema.Types.ObjectId, ref: 'AreaProtegida' },
   estado: { type: Boolean, default: true }
 })

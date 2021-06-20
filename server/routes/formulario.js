@@ -21,8 +21,8 @@ app.post('/api/formulario', [verificarToken, verificarNotRepresentant], async (r
     let formulario = new Formulario({
         nombre: body.nombre,
         pregunta: body.pregunta,
-        realizadoPor: req.usuario._id
-
+        realizadoPor: req.usuario._id,
+        mostrarEnInforme: body.mostrarEnInforme
     })
 
     for (let i = 0; i < formulario.pregunta.length; i++) {
@@ -98,7 +98,7 @@ app.put('/api/formulario/:id', [verificarToken, verificarNotRepresentant], async
     }
 
     //_.pick es filtrar y solo elegir esas del body
-    let body = _.pick(req.body, ['nombre', 'pregunta', 'realizadoPor'])
+    let body = _.pick(req.body, ['nombre', 'pregunta', 'realizadoPor', 'mostrarEnInforme'])
 
     body.realizadoPor = req.usuario._id
 

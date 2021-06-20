@@ -22,8 +22,17 @@ app.post('/api/informe', [verificarToken, verificarNotRepresentant], async (req,
         conclusion: body.conclusion,
         recomendacion: body.recomendacion,
         observacion: body.observacion,
-        realizadoPor: req.usuario._id
+        personal: body.personal,
+        clasificacion: body.clasificacion,
+        realizadoPor: req.usuario._id,
+        servicio: body.servicio,
+        actualPersonal: body.actualPersonal
     })
+
+    if (body.actividad) {
+        informe.actividad = body.actividad
+    }
+
     if (body.diagnostico) {
         informe.diagnostico = body.diagnostico
 
@@ -46,8 +55,8 @@ app.post('/api/informe', [verificarToken, verificarNotRepresentant], async (req,
                 return Response.GoodRequest(res, informeDB)
             })
         } else {
-            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos y ' + errors.notFound + ' errores de entidades no encontradas.' })
-            Response.BadRequest(errors, res)
+            Object.assign(errors, { message: '*Error*' + errors.err + ' errores de la Base de datos en las preguntas [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas en las preguntas [ ' + errors.idNotFound + ']' })
+            return Response.BadRequest(errors, res)
         }
     } else {
         return Response.BadRequest(null, res, 'El informe debe contener diagnósticos')
@@ -93,6 +102,15 @@ app.get('/api/informes/representante', verificarToken, async (req, res) => {
                     .populate({
                         path: 'diagnostico', model: 'diagnostico',
                         populate: {
+                            path: 'establecimiento', model: 'establecimiento',
+                            populate: {
+                                path: 'actividad', model: 'actividad'
+                            }
+                        }
+                    })
+                    .populate({
+                        path: 'diagnostico', model: 'diagnostico',
+                        populate: {
                             path: 'formulario', model: 'formulario', populate: {
                                 path: 'pregunta', model: 'pregunta'
                             }
@@ -117,7 +135,12 @@ app.get('/api/informes', verificarToken, async (req, res) => {
     await Informe.find({ estado })
         .populate({
             path: 'diagnostico', model: 'diagnostico',
-            populate: { path: 'establecimiento', model: 'establecimiento' }
+            populate: {
+                path: 'establecimiento', model: 'establecimiento',
+                populate: {
+                    path: 'actividad', model: 'actividad'
+                }
+            }
         })
         .populate({
             path: 'diagnostico', model: 'diagnostico',
@@ -126,8 +149,8 @@ app.get('/api/informes', verificarToken, async (req, res) => {
                 populate: { path: 'pregunta', model: 'pregunta' }
             }
         })
-        .populate({ path: 'responsable', model: 'usuario' })
         .populate({ path: 'realizadoPor', model: 'usuario' })
+        .populate({ path: 'responsable', model: 'usuario' })
         .sort(
             estado === null ? { fechaCreacion: -1 } : { fechaFinal: -1 }
         )
@@ -160,8 +183,25 @@ app.get('/api/informes/:realizadoPor/:establecimiento', verificarToken, async (r
                 }
             }
         })
-        .populate({ path: 'establecimiento', model: 'establecimiento' })
-        .populate({ path: 'aprobadoPor', model: 'usuario' })
+        .populate({
+            path: 'diagnostico', model: 'diagnostico',
+            populate: {
+                path: 'establecimiento', model: 'establecimiento',
+                populate: {
+                    path: 'actividad', model: 'actividad'
+                }
+            }
+        })
+        .populate({
+            path: 'diagnostico', model: 'diagnostico',
+            populate: {
+                path: 'establecimiento', model: 'establecimiento',
+                populate: {
+                    path: 'areaProtegida', model: 'areaProtegida'
+                }
+            }
+        })
+        .populate({ path: 'responsable', model: 'usuario' })
         .populate({ path: 'realizadoPor', model: 'usuario' })
 
         //ordena descendientemente por la fecha
@@ -172,7 +212,9 @@ app.get('/api/informes/:realizadoPor/:establecimiento', verificarToken, async (r
 
             //Filtra solo los del establecimiento en el que el usuario está actualmente por el id
             var informesEstablecimiento = informes.filter(v => {
-                return v.diagnostico[0].establecimiento._id.toString() === establecimiento
+                if (v.diagnostico[0]) {
+                    return v.diagnostico[0].establecimiento._id.toString() === establecimiento
+                }
             })
             return Response.GoodRequest(res, informesEstablecimiento)
         })
@@ -181,49 +223,22 @@ app.get('/api/informes/:realizadoPor/:establecimiento', verificarToken, async (r
 //Editar un informe
 app.put('/api/informe/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
     let id = req.params.id
-    let errors = {
-        err: 0,
-        idErr: [],
-        notFound: 0,
-        idNotFound: []
-    }
+
     //_.pick es filtrar y solo elegir esas del body
-    let body = _.pick(req.body, ['diagnostico', 'conclusion', 'recomendacion', 'observacion', 'estado'])
+    let body = _.pick(req.body, ['conclusion', 'recomendacion', 'observacion', 'servicio', 'personal', 'clasificacion'])
 
-    if (body.diagnostico.includes('')) {
-        return Response.BadRequest(null, res, 'No pueden existir diagnosticos vacios o un solo diagnostico')
-    } else {
-        for (let i = 0; i < body.diagnostico.length; i++) {
-            await Diagnostico.findById(body.diagnostico[i], (err, result) => {
-                if (err) {
-                    errors.err += 1
-                    errors.idErr.push(i)
-                }
-                if (!result) {
-                    errors.notFound += 1
-                    errors.idNotFound.push(i)
-                }
-            })
-        }
 
-        if (errors.err == 0 && errors.notFound == 0) {
-            await Informe.findById(id, async (err, informeDB) => {
-                if (err) return Response.BadRequest(err, res)
-                if (!informeDB) return Response.BadRequest(err, res, 'El informe no existe, id inválido')
-                if (informeDB.estado) return Response.BadRequest(err, res, 'El Informe ya está aprobado y no se puede editar')
+    await Informe.findById(id, async (err, informeDB) => {
+        if (err) return Response.BadRequest(err, res)
+        if (!informeDB) return Response.BadRequest(err, res, 'El informe no existe, id inválido')
+        if (informeDB.estado) return Response.BadRequest(err, res, 'El Informe ya está aprobado y no se puede editar')
 
-                body.estado = null
-                await Informe.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
-                    if (err) return Response.BadRequest(err, res)
-                    Response.GoodRequest(res)
-                })
-            })
-
-        } else {
-            Object.assign(errors, { message: 'Se han encontrado ' + errors.err + ' errores de la Base de datos y ' + errors.notFound + ' errores de entidades no encontradas.' })
-            Response.BadRequest(errors, res)
-        }
-    }
+        body.estado = null
+        await Informe.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
+            if (err) return Response.BadRequest(err, res)
+            return Response.GoodRequest(res)
+        })
+    })
 })
 
 //Borrar un informe si esta por aprobar o rechazado
@@ -237,7 +252,7 @@ app.delete('/api/informe/:id', [verificarToken, verificarNotRepresentant], async
 
         await Informe.findByIdAndRemove(id, (err) => {
             if (err) return Response.BadRequest(err, res)
-            Response.GoodRequest(res)
+            return Response.GoodRequest(res)
         })
     })
 })
@@ -249,7 +264,7 @@ app.put('/api/informe/cambiarEstado/:id/:estado', [verificarToken, verificarAdmi
     let cambiarEstado = {
         estado: '',
         responsable: req.usuario._id,
-        fechaFinal: new Date().toLocaleDateString(),
+        fechaFinal: Date.now(),
         retroalimentacion: ''
     }
 
