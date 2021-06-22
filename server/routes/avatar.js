@@ -43,6 +43,9 @@ app.post('/api/avatar/usuario/:id', [verificarToken], (req, res) => {
       }
       const url = process.env.DOMAIN + '/image/' + req.file.filename
 
+      console.log(process.env.DOMAIN);
+      console.log(url);
+
       Usuario.findByIdAndUpdate(
         id,
         { avatar: url },
