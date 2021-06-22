@@ -41,10 +41,7 @@ app.post('/api/avatar/usuario/:id', [verificarToken], (req, res) => {
       if (!req.file) {
         return Response.BadRequest(err, res, 'No se pudo encontrar el Archivo')
       }
-      const url = process.env.DOMAIN + '/image/' + req.file.filename
-
-      console.log(process.env.DOMAIN);
-      console.log(url);
+      const url = process.env.DOMAIN + 'image/' + req.file.filename
 
       Usuario.findByIdAndUpdate(
         id,
