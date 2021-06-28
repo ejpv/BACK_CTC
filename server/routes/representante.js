@@ -69,40 +69,10 @@ app.get('/api/representante/:id', [verificarToken], async (req, res) => {
 
 //Ver todos los representantes no asignados
 app.get('/api/representantes/noAsignados', [verificarToken, verificarNotRepresentant], async (req, res) => {
-    await Establecimiento.find({ estado: true }).exec(async (err, establecimientosDB) => {
+
+    await Representante.find({ asignado: false }).populate({ path: 'usuario', model: 'usuario' }).exec(async (err, representantesDB) => {
         if (err) return Response.BadRequest(err, res)
-
-        await Representante.find({ estado: true }).populate({ path: 'usuario', model: 'usuario' }).exec(async (err, representantesDB) => {
-            if (err) return Response.BadRequest(err, res)
-            if (representantesDB[0]) {
-                // representantesDB = representantesDB.filter(v => v.usuario != undefined || v.usuario != null)
-                //Verifico que almenos un establecimiento tenga asignado un representante para poder filtrar
-                let existe = false;
-                for (let i = 0; i < establecimientosDB.length; i++) {
-                    if (establecimientosDB[i].representante) {
-                        existe = true
-                    }
-                }
-                //si no hay ninguno, enviará todos los representantes
-                if (existe) {
-                    let codigosEsta = establecimientosDB.map(v => {
-                        return v.representante ? v.representante._id : null
-                    })
-                    codigosEsta = codigosEsta.filter(v => v != null)
-
-                    for (let i = 0; i < codigosEsta.length; i++) {
-                        var contiene = representantesDB.filter(v => v._id.equals(codigosEsta[i]))
-                        var indice = representantesDB.indexOf(contiene[0]);
-                        representantesDB.splice(indice, 1);
-                    }
-                    Response.GoodRequest(res, representantesDB)
-                } else {
-                    Response.GoodRequest(res, representantesDB)
-                }
-            } else {
-                Response.BadRequest(null, res, 'No se encontraron representantes')
-            }
-        })
+        Response.GoodRequest(res, representantesDB)
     })
 })
 

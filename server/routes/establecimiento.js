@@ -84,13 +84,18 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
                         await establecimiento.save(async (err, establecimientoDB) => {
                             if (err) return Response.BadRequest(err, res)
 
-                            await Establecimiento.findById(establecimientoDB._id)
-                                .populate({ path: 'areaProtegida', model: 'areaProtegida' })
-                                .populate({ path: 'representante', model: 'representante' })
-                                .populate({ path: 'actividad', model: 'actividad' }).exec((err, establishment) => {
-                                    if (err) return Response.BadRequest(err, res)
-                                    return Response.GoodRequest(res, establishment)
-                                })
+                            await Representante.findByIdAndUpdate(establecimiento.representante, { asignado: true }).exec(async (err) => {
+
+                                if (err) return Response.BadRequest(err, res, 'No se pudo actualizar representante')
+
+                                await Establecimiento.findById(establecimientoDB._id)
+                                    .populate({ path: 'areaProtegida', model: 'areaProtegida' })
+                                    .populate({ path: 'representante', model: 'representante' })
+                                    .populate({ path: 'actividad', model: 'actividad' }).exec((err, establishment) => {
+                                        if (err) return Response.BadRequest(err, res)
+                                        return Response.GoodRequest(res, establishment)
+                                    })
+                            })
                         })
                     } else {
                         Object.assign(errors, { message: '*Error*' + errors.err + ' errores de la Base de datos en las actividades [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas en las actividades [ ' + errors.idNotFound + ']' })
@@ -173,13 +178,18 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
                             await establecimiento.save(async (err, establecimientoDB) => {
                                 if (err) return Response.BadRequest(err, res)
 
-                                await Establecimiento.findById(establecimientoDB._id)
-                                    .populate({ path: 'areaProtegida', model: 'areaProtegida' })
-                                    .populate({ path: 'representante', model: 'representante' })
-                                    .populate({ path: 'actividad', model: 'actividad' }).exec((err, establishment) => {
-                                        if (err) return Response.BadRequest(err, res)
-                                        return Response.GoodRequest(res, establishment)
-                                    })
+                                await Representante.findByIdAndUpdate(establecimiento.representante, { asignado: true }).exec(async (err) => {
+
+                                    if (err) return Response.BadRequest(err, res, 'No se pudo actualizar representante')
+
+                                    await Establecimiento.findById(establecimientoDB._id)
+                                        .populate({ path: 'areaProtegida', model: 'areaProtegida' })
+                                        .populate({ path: 'representante', model: 'representante' })
+                                        .populate({ path: 'actividad', model: 'actividad' }).exec((err, establishment) => {
+                                            if (err) return Response.BadRequest(err, res)
+                                            return Response.GoodRequest(res, establishment)
+                                        })
+                                })
                             })
                         } else {
                             Object.assign(errors, { message: '*Error*' + errors.err + ' errores de la Base de datos en las actividades [' + errors.idErr + '] y ' + errors.notFound + ' errores de entidades no encontradas en las actividades [ ' + errors.idNotFound + ']' })
@@ -233,7 +243,7 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
 app.get('/api/establecimientos', [verificarToken, verificarNotRepresentant], async (req, res) => {
     // el estado por defecto es true, solo acepta estado falso por la url
     const estado = req.query.estado === 'false' ? false : true
-    
+
     await Establecimiento.find({ estado })
         .populate({ path: 'areaProtegida', model: 'areaProtegida' })
         .populate({ path: 'representante', model: 'representante' })
@@ -318,9 +328,13 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
                             if (err) return Response.BadRequest(err, res)
                             if (!establecimientoDB) return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
                             if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
-                            await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
-                                if (err) return Response.BadRequest(err, res)
-                                Response.GoodRequest(res)
+                            await Representante.findByIdAndUpdate(body.representante, { asignado: true }).exec(async (err) => {
+                                if (err) return Response.BadRequest(err, res, 'No se pudo actualizar representante')
+
+                                await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
+                                    if (err) return Response.BadRequest(err, res)
+                                    Response.GoodRequest(res)
+                                })
                             })
                         })
                     } else {
@@ -404,9 +418,14 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
                                 if (err) return Response.BadRequest(err, res)
                                 if (!establecimientoDB) return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
                                 if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
-                                await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
-                                    if (err) return Response.BadRequest(err, res)
-                                    Response.GoodRequest(res)
+
+                                await Representante.findByIdAndUpdate(body.representante, { asignado: true }).exec(async (err) => {
+                                    if (err) return Response.BadRequest(err, res, 'No se pudo actualizar representante')
+
+                                    await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
+                                        if (err) return Response.BadRequest(err, res)
+                                        Response.GoodRequest(res)
+                                    })
                                 })
                             })
                         } else {
@@ -464,9 +483,13 @@ app.put('/api/establecimiento/removerRepresentante/:id', [verificarToken, verifi
         if (!establecimientoDB) return Response.BadRequest(err, res, 'El Establecimiento no existe, id inválido')
         if (!establecimientoDB.estado) return Response.BadRequest(err, res, 'El Establecimiento está actualmente Borrado')
 
-        await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
-            if (err) return Response.BadRequest(err, res)
-            Response.GoodRequest(res)
+        await Representante.findByIdAndUpdate(establecimientoDB.representante, { asignado: false }).exec(async (err) => {
+            if (err) return Response.BadRequest(err, res, 'No se pudo actualizar representante')
+
+            await Establecimiento.findByIdAndUpdate(id, body, { runValidators: true, context: 'query' }, (err) => {
+                if (err) return Response.BadRequest(err, res)
+                Response.GoodRequest(res)
+            })
         })
     })
 })

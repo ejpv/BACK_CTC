@@ -11,7 +11,8 @@ let representanteSchema = new Schema({
   direccion: { type: String, default: 'Sin dirección' },
   telefono: { type: String, default: 'Sin número' },
   usuario: { type: Schema.Types.ObjectId, ref: 'usuario' },
-  estado: { type: Boolean, default: true },
+  asignado: { type: Boolean, default: false },
+  estado: { type: Boolean, default: true }
 })
 
 representanteSchema.plugin(uniqueValidator, {
