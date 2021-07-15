@@ -111,6 +111,15 @@ app.get('/api/informes/representante', verificarToken, async (req, res) => {
                     .populate({
                         path: 'diagnostico', model: 'diagnostico',
                         populate: {
+                            path: 'establecimiento', model: 'establecimiento',
+                            populate: {
+                                path: 'areaProtegida', model: 'areaProtegida'
+                            }
+                        }
+                    })
+                    .populate({
+                        path: 'diagnostico', model: 'diagnostico',
+                        populate: {
                             path: 'formulario', model: 'formulario', populate: {
                                 path: 'pregunta', model: 'pregunta'
                             }
