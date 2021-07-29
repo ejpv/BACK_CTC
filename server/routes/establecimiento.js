@@ -248,6 +248,7 @@ app.get('/api/establecimientos', [verificarToken, verificarNotRepresentant], asy
         .populate({ path: 'areaProtegida', model: 'areaProtegida' })
         .populate({ path: 'representante', model: 'representante' })
         .populate({ path: 'actividad', model: 'actividad' })
+        .sort({nombre: 1})
         .exec(async (err, establecimientos) => {
             if (err) return Response.BadRequest(err, res)
 
