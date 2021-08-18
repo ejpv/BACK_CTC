@@ -18,7 +18,10 @@ app.post('/api/login', async (req, res) => {
     if (err) return Response.BadRequest(err, res)
 
     //buscando el email
-    if (!usuarioDb || !usuarioDb.estado) return Response.BadRequest(err, res, 'Correo Incorrecto')
+    if (!usuarioDb) return Response.BadRequest(err, res, 'Correo Incorrecto')
+
+    //usuario borrado
+    if (!usuarioDb.estado) return Response.BadRequest(err, res, 'Usuario actualmente borrado')
 
     //comparar contraseña encriptandola y comparando la encriptación
     if (!bcrypt.compareSync(body.password, usuarioDb.password)) return Response.BadRequest(err, res, 'Contraseña Incorrecta')
