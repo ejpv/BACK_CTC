@@ -49,23 +49,21 @@ app.get('/api/representante/:id', [verificarToken], async (req, res) => {
 
     await Representante.findOne({ usuario: id }).populate().exec(async (err, representanteDB) => {
         if (err) return Response.BadRequest(err, res)
-        if (!representanteDB) {
-            return Response.BadRequest(err, 'No tiene Representante asignado')
-        } else {
-            await Establecimiento.findOne({ representante: representanteDB._id })
-                .populate({ model: 'areaProtegida', path: 'areaProtegida' })
-                .populate({ model: 'actividad', path: 'actividad' })
-                .exec((err, establecimientoDB) => {
-                    if (err) return Response.BadRequest(err, res)
-                    if (!establecimientoDB) {
-                        var objeto = { representante: representanteDB }
-                        Response.GoodRequest(res, objeto)
-                    } else {
-                        var objeto = { representante: representanteDB, establecimiento: establecimientoDB }
-                        Response.GoodRequest(res, objeto)
-                    }
-                })
-        }
+        if (!representanteDB) return Response.BadRequest(err, res, 'No tiene Representante asignado')
+
+        await Establecimiento.findOne({ representante: representanteDB._id })
+            .populate({ model: 'areaProtegida', path: 'areaProtegida' })
+            .populate({ model: 'actividad', path: 'actividad' })
+            .exec((err, establecimientoDB) => {
+                if (err) return Response.BadRequest(err, res)
+                if (!establecimientoDB) {
+                    var objeto = { representante: representanteDB }
+                    Response.GoodRequest(res, objeto)
+                } else {
+                    var objeto = { representante: representanteDB, establecimiento: establecimientoDB }
+                    Response.GoodRequest(res, objeto)
+                }
+            })
 
     })
 })
