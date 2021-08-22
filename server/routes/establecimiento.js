@@ -41,7 +41,8 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
         desechos: body.desechos,
         personal: body.personal,
         areaProtegida: body.areaProtegida,
-        representante: body.representante
+        representante: body.representante,
+        actividad: body.actividad
     })
 
     //Esto recibe cual es la combinación que se envía desde el cliente
