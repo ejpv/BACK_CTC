@@ -1,7 +1,7 @@
 const express = require('express')
 const Response = require('../utils/response')
 const Actividad = require('../models/actividad')
-const Informe = require('../models/informe')
+const Establecimiento = require('../models/establecimiento')
 const { verificarToken, verificarAdmin_Rol } = require('../middlewares/autentication')
 const _ = require('underscore')
 const app = express()
@@ -58,16 +58,14 @@ app.delete('/api/actividad/:id', [verificarToken, verificarAdmin_Rol], async (re
         if (err) return Response.BadRequest(err, res)
         if (!actividadDB) return Response.BadRequest(err, res, 'No existe la Actividad, id inválido')
 
-        await Informe.find({ actividad: id }).exec(async (err, informes) => {
+        await Establecimiento.find({ actividad: id }).exec(async (err, establecimientos) => {
             if (err) return Response.BadRequest(err, res)
-            if (informes[0]) {
-                return Response.BadRequest(err, res, 'La Actividad está siendo usada en un informe y no se puede borrar.')
-            } else {
-                await Actividad.findByIdAndRemove(id, (err) => {
-                    if (err) return Response.BadRequest(err, res)
-                    Response.GoodRequest(res)
-                })
-            }
+            if (!establecimientos[0]) return Response.BadRequest(err, res, 'Un Establecimiento está usando esa actividad, no puede ser borrada')
+
+            await Actividad.findByIdAndRemove(id, (err) => {
+                if (err) return Response.BadRequest(err, res)
+                Response.GoodRequest(res)
+            })
         })
     })
 })
