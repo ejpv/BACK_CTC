@@ -228,6 +228,15 @@ app.get('/api/informes/:realizadoPor/:establecimiento', verificarToken, async (r
                 }
             }
         })
+        .populate({
+            path: 'diagnostico', model: 'diagnostico',
+            populate: {
+                path: 'establecimiento', model: 'establecimiento',
+                populate: {
+                    path: 'representante', model: 'representante'
+                }
+            }
+        })
         .populate({ path: 'responsable', model: 'usuario' })
         .populate({ path: 'realizadoPor', model: 'usuario' })
 
