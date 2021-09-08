@@ -33,17 +33,27 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
         canton: body.canton,
         ciudad: body.ciudad,
         parroquia: body.parroquia,
-        lat: body.lat,
-        lng: body.lng,
         agua: body.agua,
         saneamiento: body.saneamiento,
         energia: body.energia,
         desechos: body.desechos,
-        personal: body.personal,
         areaProtegida: body.areaProtegida,
         representante: body.representante,
         actividad: body.actividad
     })
+
+    if (Number.isInteger(parseInt(body.lat)) && Number.isInteger(parseInt(body.lng))) {
+        establecimiento.lat = body.lat
+        establecimiento.lng = body.lng
+    } else {
+        return Response.BadRequest(null, res, 'Latitud y longitud deben tener valores numéricos')
+    }
+
+    if (Number.isInteger(parseInt(body.personal))) {
+        establecimiento.personal = body.personal
+    } else {
+        return Response.BadRequest(null, res, 'Personal debe tener un valor numérico')
+    }
 
     //Esto recibe cual es la combinación que se envía desde el cliente
     // ambos ids
@@ -236,8 +246,6 @@ app.post('/api/establecimiento', [verificarToken, verificarNotRepresentant], asy
             break;
     }
 
-
-
 })
 
 //obtener todos los establecimientos
@@ -249,7 +257,7 @@ app.get('/api/establecimientos', [verificarToken, verificarNotRepresentant], asy
         .populate({ path: 'areaProtegida', model: 'areaProtegida' })
         .populate({ path: 'representante', model: 'representante' })
         .populate({ path: 'actividad', model: 'actividad' })
-        .sort({nombre: 1})
+        .sort({ nombre: 1 })
         .exec(async (err, establecimientos) => {
             if (err) return Response.BadRequest(err, res)
 
@@ -288,6 +296,11 @@ app.put('/api/establecimiento/:id', [verificarToken, verificarNotRepresentant], 
         notFound: 0,
         idNotFound: []
     }
+
+    if (!Number.isInteger(parseInt(body.lat)) || !Number.isInteger(parseInt(body.lng))) return Response.BadRequest(null, res, 'Latitud y longitud deben tener valores numéricos')
+    if (!Number.isInteger(parseInt(body.personal))) return Response.BadRequest(null, res, 'Personal debe tener un valor numérico')
+
+
 
     //Esto recibe cual es la combinación que se envía desde el cliente
     // ambos ids
