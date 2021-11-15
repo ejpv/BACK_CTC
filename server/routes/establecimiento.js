@@ -587,4 +587,20 @@ app.put('/api/establecimiento/:id/restaurar', [verificarToken, verificarNotRepre
 
 })
 
+//obtener un establecimiento por el id de un representante
+app.get('/api/establecimiento/erased/:id', [verificarToken, verificarNotRepresentant], async (req, res) => {
+    let id = req.params.id
+
+    await Establecimiento.findOne({ representante: id })
+        .populate({ path: 'areaProtegida', model: 'areaProtegida' })
+        .populate({ path: 'representante', model: 'representante' })
+        .populate({ path: 'actividad', model: 'actividad' })
+        .exec((err, establecimientoDB) => {
+            if (err) return Response.BadRequest(err, res)
+            if (!establecimientoDB) return Response.BadRequest(err, res, 'El establecimiento no existe, id inválido')
+            //aqui no se controla que este borrado por eso no tiene el control del estado
+            Response.GoodRequest(res, establecimientoDB)
+        })
+})
+
 module.exports = app;
