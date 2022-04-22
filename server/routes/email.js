@@ -9,7 +9,7 @@ const Path = require("path")
 const ejs = require('ejs')
 const app = express()
 
-
+//Correo para la verificación de Email
 app.post('/api/email/verifica/', verificarToken, async (req, res) => {
     let { id } = req.body
     const asunto = 'Verificación de email';
@@ -41,7 +41,7 @@ app.post('/api/email/verifica/', verificarToken, async (req, res) => {
 
             async (err, html) => {
                 if (err) return Response.BadRequest(err, res)
-                if (!await enviarMensaje(html, usuarioDB.email, asunto)) return Response.BadRequest(err, res, 'No se encuentra destinatario')
+                if (!await enviarMensaje(html, usuarioDB.email, asunto)) return Response.BadRequest(err, res, 'No se pudo enviar el correo')
                 const agregartoken = {
                     verificacionToken: token
                 }
@@ -54,6 +54,7 @@ app.post('/api/email/verifica/', verificarToken, async (req, res) => {
     })
 })
 
+//Correo para restaurar la contraseña
 app.post('/api/email/restaura/', async (req, res) => {
     let { email } = req.body
     const asunto = 'Reestablecimiento de contraseña'
@@ -92,7 +93,11 @@ app.post('/api/email/restaura/', async (req, res) => {
     })
 })
 
+
+//Método para enviar los correos
+
 async function enviarMensaje(contentHTML, email, asunto) {
+    //Preparando el transporter
     const transporter = nodemailer.createTransport({
         host: 'smtp.office365.com',
         port: 587,
@@ -106,10 +111,11 @@ async function enviarMensaje(contentHTML, email, asunto) {
         }
     })
 
+    //verificando que exista un correo destino
     if (email) {
         let error = true
         await transporter.sendMail({
-            from: 'Calidad Turismo Comunitario - CTC  <ejporras.fis@unach.edu.ec>',
+            from: `Sistema de Prestadores Turísticos - SPT <${process.env.USER_EMAIL}>`,
             to: email,
             subject: asunto,
             html: contentHTML
